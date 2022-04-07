@@ -1,0 +1,12 @@
+
+*.o
+*.lst
+lib/*
+recycling-center/.dep/*
+recycling-center/.settings/*
+recycling-center/build/*
+
+recycling-center/.cproject
+recycling-center/.project
+*.launch
+*.a
