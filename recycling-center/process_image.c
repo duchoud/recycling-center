@@ -2,11 +2,14 @@
 #include "hal.h"
 #include <chprintf.h>
 #include <usbcfg.h>
+#include <selector.h>
 
 #include <main.h>
 #include <camera/po8030.h>
 
 #include <process_image.h>
+
+
 
 
 static float distance_cm = 0;
@@ -139,13 +142,22 @@ static THD_FUNCTION(ProcessImage, arg) {
         chBSemWait(&image_ready_sem);
 		//gets the pointer to the array filled with the last image in RGB565    
 		img_buff_ptr = dcmi_get_last_image_ptr();
-
+		init_selector();
 		//Extracts only the red pixels
 		for(int i = 0; i < IMAGE_BUFFER_SIZE; i++) {
 			uint16_t blue = (img_buff_ptr[2 * i + 1] & 0b11111);
 			uint16_t red = (img_buff_ptr[2 * i] & 0b11111000);
 			uint16_t green =  (((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5));
-			image[i] = red;
+
+			if((get_selector()%3)==0){
+				image[i] = red;
+			}
+			if((get_selector()%3)==1){
+				image[i] = green;
+			}
+			else{
+				image[i] = blue;
+			}
 		}
 
 		//search for a line in the image and gets its width in pixels
