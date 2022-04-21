@@ -5,8 +5,8 @@
  *      Author: marin
  */
 
-#include "proximity.h"
-#include "VL53L0X.h"
+#include <sensors/proximity.h>
+#include <sensors/VL53L0X/VL53L0X.h>
 
 #define NB_IR_SENSORS 8
 #define DISTANCE_MIN 10
@@ -32,5 +32,5 @@ uint8_t collision_check(void) {
 
 
 uint16_t get_distance(void) {
-	VL53L0X_get_dist_mm();
+	return VL53L0X_get_dist_mm();
 }
