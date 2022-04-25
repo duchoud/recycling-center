@@ -5,6 +5,7 @@
  *      Author: marin
  */
 
+#include "distances.h"
 #include <sensors/proximity.h>
 #include <sensors/VL53L0X/VL53L0X.h>
 
