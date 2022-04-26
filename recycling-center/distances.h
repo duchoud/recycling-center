@@ -8,6 +8,10 @@
 #ifndef DISTANCES_H_
 #define DISTANCES_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
 * @brief   Calls the start for the IR sensors and the Time Of Flight sensor.
 *
@@ -27,5 +31,9 @@ uint8_t collision_check(void);
 *
 */
 uint16_t get_distance(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DISTANCES_H_ */

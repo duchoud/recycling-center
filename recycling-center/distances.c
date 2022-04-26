@@ -5,17 +5,17 @@
  *      Author: marin
  */
 
-#include "distances.h"
 #include <sensors/proximity.h>
 #include <sensors/VL53L0X/VL53L0X.h>
+#include <distances.h>
 
 #define NB_IR_SENSORS 8
 #define DISTANCE_MIN 10
 
 void distances_start(void) {
 
-	proximity_start();
-	calibrate_ir();
+	//proximity_start();
+	//calibrate_ir();
 
 	VL53L0X_start();
 

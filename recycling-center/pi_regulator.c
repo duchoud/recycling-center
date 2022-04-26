@@ -9,21 +9,26 @@
 #include <motors.h>
 #include <pi_regulator.h>
 #include <process_image.h>
+#include <distances.h>
 
 //simple PI regulator implementation
-int16_t pi_regulator(float distance, float goal){
+int16_t pi_regulator(int16_t distance, int16_t goal){
 
-	float error = 0;
-	float speed = 0;
+	if (distance > MAX_DISTANCE) {
+		return 0;
+	}
 
-	static float sum_error = 0;
+	int16_t error = 0;
+	int16_t speed = 0;
+
+	static int16_t sum_error = 0;
 
 	error = distance - goal;
 
 	//disables the PI regulator if the error is to small
 	//this avoids to always move as we cannot exactly be where we want and 
 	//the camera is a bit noisy
-	if(fabs(error) < ERROR_THRESHOLD){
+	if(abs(error) < ERROR_THRESHOLD){
 		return 0;
 	}
 
@@ -38,7 +43,7 @@ int16_t pi_regulator(float distance, float goal){
 
 	speed = KP * error + KI * sum_error;
 
-    return (int16_t)speed;
+    return speed;
 }
 
 static THD_WORKING_AREA(waPiRegulator, 256);
@@ -56,14 +61,18 @@ static THD_FUNCTION(PiRegulator, arg) {
         time = chVTGetSystemTime();
         
         //computes the speed to give to the motors
-        //distance_cm is modified by the image processing thread
-        speed = pi_regulator(get_distance_cm(), GOAL_DISTANCE);
+        //distance is modified by the time_of_flight thread
+        speed = pi_regulator(get_distance(), GOAL_DISTANCE);
         //computes a correction factor to let the robot rotate to be in front of the line
-        speed_correction = (get_line_position() - (IMAGE_BUFFER_SIZE/2));
+        speed_correction = 0;//(get_line_position() - (IMAGE_BUFFER_SIZE/2));
 
         //if the line is nearly in front of the camera, don't rotate
         if(abs(speed_correction) < ROTATION_THRESHOLD){
         	speed_correction = 0;
+        }
+
+        if(abs(speed) < MIN_SPEED) {
+        	speed = 0;
         }
 
         //applies the speed from the PI regulator and the correction for the rotation

@@ -14,6 +14,7 @@
 
 #include <pi_regulator.h>
 #include <process_image.h>
+#include <distances.h>
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
@@ -50,14 +51,18 @@ int main(void)
 	po8030_start();
 	//inits the motors
 	motors_init();
+	//inits the sensors
+	distances_start();
 
 	//stars the threads for the pi regulator and the processing of the image
 	pi_regulator_start();
-	process_image_start();
+	//process_image_start();
 
     /* Infinite loop. */
     while (1) {
     	//waits 1 second
+    	//uint16_t distance = get_distance();
+    	//chprintf((BaseSequentialStream *)&SD3, "Disatnce = %d \r\n", distance);
         chThdSleepMilliseconds(1000);
     }
 }
