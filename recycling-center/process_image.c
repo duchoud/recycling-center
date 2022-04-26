@@ -142,21 +142,22 @@ static THD_FUNCTION(ProcessImage, arg) {
         chBSemWait(&image_ready_sem);
 		//gets the pointer to the array filled with the last image in RGB565    
 		img_buff_ptr = dcmi_get_last_image_ptr();
-		init_selector();
+		//init_selector();
 		//Extracts only the red pixels
 		for(int i = 0; i < IMAGE_BUFFER_SIZE; i++) {
-			uint16_t blue = (img_buff_ptr[2 * i + 1] & 0b11111);
+			//uint16_t blue = (img_buff_ptr[2 * i + 1] & 0b11111);
 			uint16_t red = (img_buff_ptr[2 * i] & 0b11111000);
-			uint16_t green =  (((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5));
+			uint16_t green =  ((((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5))/2) << 3;
 
-			if((get_selector()%3)==0){
-				image[i] = red;
+			if((get_selector() % 2) == 0) {
+				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+				red = red + dist * dist * COEFF_MOD_CAM * dist ;
+				image[i] = value;
 			}
-			if((get_selector()%3)==1){
+			if((get_selector() % 2) == 1){
+				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+				green = green + dist * dist * COEFF_MOD_CAM * dist;
 				image[i] = green;
-			}
-			else{
-				image[i] = blue;
 			}
 		}
 
