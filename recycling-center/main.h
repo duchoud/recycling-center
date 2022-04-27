@@ -15,7 +15,6 @@ extern "C" {
 #define WIDTH_SLOPE				5
 #define MIN_LINE_WIDTH			40
 #define ROTATION_THRESHOLD		10
-#define ROTATION_COEFF			2 
 #define PXTOCM					1570.0f //experimental value
 #define GOAL_DISTANCE 			65.0f
 #define MIN_SPEED				150
@@ -25,6 +24,14 @@ extern "C" {
 #define KI 						1.5f	//must not be zero
 #define MAX_SUM_ERROR 			(MOTOR_SPEED_LIMIT/KI)
 #define TOF_LATERAL_THRESHOLD	10
+
+#define MOTOR_UPDT_TIME			10 // [ms]
+#define WHEEL_DIAMETER			41 // [cm]
+#define ROBOT_DIAMETER			1  // [cm]
+#define NB_STEPS_PER_TURN		1000
+#define TURN_SPEED				(2*PI*MIN_SPEED / NB_STEPS_PER_TURN) // [rad/s]
+#define ANGLE_PER_UPDATE		(WHEEL_DIAMETER / ROBOT_DIAMETER * TURN_SPEED * MOTOR_UPDT_TIME) // [rad]
+#define DROP_ANGLE				PI
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;

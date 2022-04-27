@@ -11,6 +11,12 @@
 #include <process_image.h>
 #include <distances.h>
 
+enum State{
+	LOOKING_FOR_TARGET,
+	PICKING_OBJ,
+	DROPPING_OBJ
+};
+
 //simple PI regulator implementation
 int16_t pi_regulator(int16_t distance, int16_t goal){
 
@@ -61,31 +67,57 @@ static THD_FUNCTION(PiRegulator, arg) {
 
     systime_t time;
 
-    int16_t speed = 0;
-    int16_t speed_correction = 0;
+    int16_t r_speed = 0;
+    int16_t l_speed = 0;
+
+    enum State current_state = LOOKING_FOR_TARGET;
+
+    // voir le type en fonction du calcul
+    int16_t angle_counter = 0;
 
     while(1){
         time = chVTGetSystemTime();
         
-        //computes the speed to give to the motors
-        //distance is modified by the time_of_flight thread
-        if (check_object_center()) {
-        	speed = pi_regulator(get_distance(), GOAL_DISTANCE);
+        if (current_state == LOOKING_FOR_TARGET) {
+			//computes the speed to give to the motors
+			//distance is modified by the time_of_flight thread
+			if (check_object_center()) {
+				r_speed = pi_regulator(get_distance(), GOAL_DISTANCE);
 
-        	if(abs(speed) < MIN_SPEED) {
-				speed = 0;
+				if(abs(r_speed) < MIN_SPEED) {
+					r_speed = 0;
+				}
+				l_speed = r_speed;
+			} else {
+				r_speed = MIN_SPEED;
+				l_speed = -MIN_SPEED;
 			}
         } else {
-        	speed = 0;
-        	speed_correction = MIN_SPEED;
+        	if (current_state == PICKING_OBJ) {
+        		r_speed = MIN_SPEED;
+        		l_speed = -MIN_SPEED;
+
+        		angle_counter += ANGLE_PER_UPDATE;
+        	} else if ((current_state == DROPPING_OBJ)) {
+        		r_speed = -MIN_SPEED;
+				l_speed = MIN_SPEED;
+
+				angle_counter -= ANGLE_PER_UPDATE;
+        	}
+
+        	if ((current_state == PICKING_OBJ && angle_counter > DROP_ANGLE)
+        		|| (current_state == DROPPING_OBJ && angle_counter < -DROP_ANGLE)) {
+        		angle_counter = 0;
+        		r_speed = 0;
+        		l_speed = 0;
+        		current_state = LOOKING_FOR_TARGET;
+        	}
         }
-
         //applies the speed from the PI regulator and the correction for the rotation
-		right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);
-		left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
+		right_motor_set_speed(r_speed);
+		left_motor_set_speed(l_speed);
 
-        //100Hz
-        chThdSleepUntilWindowed(time, time + MS2ST(10));
+        chThdSleepUntilWindowed(time, time + MS2ST(MOTOR_UPDT_TIME));
     }
 }
 
