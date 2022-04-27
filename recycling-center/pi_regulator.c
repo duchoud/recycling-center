@@ -46,6 +46,13 @@ int16_t pi_regulator(int16_t distance, int16_t goal){
     return speed;
 }
 
+bool check_object_center(void) {
+	if (abs(get_line_position() - IMAGE_BUFFER_SIZE/2) < TOF_LATERAL_THRESHOLD) {
+		return true;
+	}
+	return false;
+}
+
 static THD_WORKING_AREA(waPiRegulator, 256);
 static THD_FUNCTION(PiRegulator, arg) {
 
@@ -62,17 +69,15 @@ static THD_FUNCTION(PiRegulator, arg) {
         
         //computes the speed to give to the motors
         //distance is modified by the time_of_flight thread
-        speed = pi_regulator(get_distance(), GOAL_DISTANCE);
-        //computes a correction factor to let the robot rotate to be in front of the line
-        speed_correction = 0;//(get_line_position() - (IMAGE_BUFFER_SIZE/2));
+        if (check_object_center()) {
+        	speed = pi_regulator(get_distance(), GOAL_DISTANCE);
 
-        //if the line is nearly in front of the camera, don't rotate
-        if(abs(speed_correction) < ROTATION_THRESHOLD){
-        	speed_correction = 0;
-        }
-
-        if(abs(speed) < MIN_SPEED) {
+        	if(abs(speed) < MIN_SPEED) {
+				speed = 0;
+			}
+        } else {
         	speed = 0;
+        	speed_correction = MIN_SPEED;
         }
 
         //applies the speed from the PI regulator and the correction for the rotation
