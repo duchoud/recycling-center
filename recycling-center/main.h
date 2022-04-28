@@ -12,7 +12,7 @@ extern "C" {
 
 //constants for the differents parts of the project
 #define IMAGE_BUFFER_SIZE		640
-#define WIDTH_SLOPE				5
+#define WIDTH_SLOPE				20
 #define MIN_LINE_WIDTH			40
 #define ROTATION_THRESHOLD		10
 #define ROTATION_COEFF			2 
@@ -24,6 +24,10 @@ extern "C" {
 #define KI 						3.5f	//must not be zero
 #define MAX_SUM_ERROR 			(MOTOR_SPEED_LIMIT/KI)
 #define COEFF_MOD_CAM			0.00000055f //to multiply with the cube of the distance to modify the error of the edge of the camera
+#define HTHRESHOLD				30  	//minimum value of the jump to be detected
+#define NOTFOUND				650		//line not found uint16 greater than IMAGE_BUFFER_SIZE
+#define RED_THRESHOLD			35		//experimentally found value
+#define GREEN_THRESHOLD			45		//experimentally found value
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;
