@@ -78,13 +78,10 @@ void extract_object_position(uint8_t *buffer){
 		}
 		meancolour /= (end-begin);
 
-		if (current_colour == RED && meancolour > RED_THRESHOLD) {
-			line_not_found = 1;
-		} else if (current_colour == GREEN && meancolour > GREEN_THRESHOLD){
-			line_not_found = 1;
-		}
+		if ((current_colour == RED && meancolour > RED_THRESHOLD) 	  ||
+			(current_colour == GREEN && meancolour > GREEN_THRESHOLD) ||
+			(!line_not_found && (end-begin) < MIN_LINE_WIDTH)) {
 
-		if(!line_not_found && (end-begin) < MIN_LINE_WIDTH){
 			i = end;
 			begin = 0;
 			end = 0;

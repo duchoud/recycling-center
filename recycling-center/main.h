@@ -14,29 +14,29 @@ extern "C" {
 //constants for the differents parts of the project
 #define IMAGE_BUFFER_SIZE		640
 #define WIDTH_SLOPE				20
-#define MIN_LINE_WIDTH			40
+#define MIN_LINE_WIDTH			10
 #define ROTATION_THRESHOLD		10
 #define PXTOCM					1570.0f //experimental value
-#define GOAL_DISTANCE 			65.0f
-#define MIN_SPEED				150
+#define GOAL_DISTANCE 			50.0f
+#define TOF_ONLY_DIST			100.0f
+#define MIN_SPEED				100
 #define MAX_DISTANCE 			1000.0f
 #define ERROR_THRESHOLD			10	//[mm]
-#define KP_DIST					15.0f
-#define KI_DIST 				1.5f	//must not be zero
-#define KP_ROTA					6.0f
-#define KI_ROTA 				1.5f	//must not be zero
+#define KP_DIST					10.0f
+#define KI_DIST 				1.0f	//must not be zero
+#define KP_ROTA					1.0f
 #define MAX_SUM_ERROR 			(MOTOR_SPEED_LIMIT/KI_DIST)
 
 #define COEFF_MOD_CAM			0.00000055f //to multiply with the cube of the distance to modify the error of the edge of the camera
 #define HTHRESHOLD				30  	//minimum value of the jump to be detected
 #define NOTFOUND				650		//line not found uint16 greater than IMAGE_BUFFER_SIZE
 #define RED_THRESHOLD			35		//experimentally found value
-#define GREEN_THRESHOLD			45		//experimentally found value
+#define GREEN_THRESHOLD			55		//experimentally found value
 
-#define TOF_LATERAL_THRESHOLD	10
+#define TOF_LATERAL_THRESHOLD	50
 
 #define MOTOR_UPDT_TIME			10 // [ms]
-#define ROTATION_SPEED			200 // [steps/s]
+#define ROTATION_SPEED			150 // [steps/s]
 #define WHEEL_DIAMETER			41 // [mm]
 #define ROBOT_DIAMETER			53  // [mm]
 #define NB_STEPS_PER_TURN		2000

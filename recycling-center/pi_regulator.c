@@ -53,15 +53,11 @@ int16_t distance_pi_regulator(int16_t distance, int16_t goal){
 
 int16_t rotate_pi_regulator(uint16_t line_position){
 
-	// we want the object to be in the center
-	uint16_t goal = IMAGE_BUFFER_SIZE / 2;
-
 	int16_t error = 0;
 	int16_t speed = 0;
 
-	static int16_t sum_error = 0;
-
-	error = line_position - goal;
+	// we want the object to be in the center
+	error = line_position - (IMAGE_BUFFER_SIZE / 2);
 
 	//disables the PI regulator if the error is to small
 	//this avoids to always move as we cannot exactly be where we want and
@@ -70,22 +66,13 @@ int16_t rotate_pi_regulator(uint16_t line_position){
 		return 0;
 	}
 
-	sum_error += error;
-
-	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
-	if(sum_error > MAX_SUM_ERROR){
-		sum_error = MAX_SUM_ERROR;
-	}else if(sum_error < -MAX_SUM_ERROR){
-		sum_error = -MAX_SUM_ERROR;
-	}
-
-	speed = KP_ROTA * error + KI_ROTA * sum_error;
+	speed = KP_ROTA * error ;
 
     return speed;
 }
 
 bool check_object_center(void) {
-	if (abs(get_line_position() - IMAGE_BUFFER_SIZE/2) < TOF_LATERAL_THRESHOLD) {
+	if (abs(get_line_position() - (IMAGE_BUFFER_SIZE/2)) < TOF_LATERAL_THRESHOLD) {
 		return true;
 	}
 	return false;
@@ -113,7 +100,7 @@ static THD_FUNCTION(PiRegulator, arg) {
         if (current_state == LOOKING_FOR_TARGET) {
 			//computes the speed to give to the motors
 			//distance is modified by the time_of_flight thread
-			if (check_object_center()) {
+			if ((get_distance() < TOF_ONLY_DIST) || check_object_center()) {
 				r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
 
 				if(abs(r_speed) < MIN_SPEED) {
@@ -122,14 +109,10 @@ static THD_FUNCTION(PiRegulator, arg) {
 				l_speed = r_speed;
 			} else {
 				if (get_line_position() > 640) {
-					// No target in sight, the robot should rotate to find one
-					r_speed = -ROTATION_SPEED;
-					l_speed = ROTATION_SPEED;
+					r_speed = 0;
+					l_speed = 0;
 				} else {
-					r_speed = rotate_pi_regulator(get_line_position());
-					if(abs(r_speed) < MIN_SPEED) {
-						r_speed = 0;
-					}
+					r_speed = -rotate_pi_regulator(get_line_position());
 					l_speed = -r_speed;
 				}
 			}
