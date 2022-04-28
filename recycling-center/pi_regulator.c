@@ -18,7 +18,7 @@ enum State{
 };
 
 //simple PI regulator implementation
-int16_t pi_regulator(int16_t distance, int16_t goal){
+int16_t distance_pi_regulator(int16_t distance, int16_t goal){
 
 	if (distance > MAX_DISTANCE) {
 		return 0;
@@ -27,12 +27,44 @@ int16_t pi_regulator(int16_t distance, int16_t goal){
 	int16_t error = 0;
 	int16_t speed = 0;
 
-	static int16_t sum_error = 0;
+	static int16_t sum_error_dist = 0;
 
 	error = distance - goal;
 
 	//disables the PI regulator if the error is to small
-	//this avoids to always move as we cannot exactly be where we want and 
+	//this avoids to always move as we cannot exactly be where we want
+	if(abs(error) < ERROR_THRESHOLD){
+		return 0;
+	}
+
+	sum_error_dist += error;
+
+	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
+	if(sum_error_dist > MAX_SUM_ERROR){
+		sum_error_dist = MAX_SUM_ERROR;
+	}else if(sum_error_dist < -MAX_SUM_ERROR){
+		sum_error_dist = -MAX_SUM_ERROR;
+	}
+
+	speed = KP_DIST * error + KI_DIST * sum_error_dist;
+
+    return speed;
+}
+
+int16_t rotate_pi_regulator(uint16_t line_position){
+
+	// we want the object to be in the center
+	uint16_t goal = IMAGE_BUFFER_SIZE / 2;
+
+	int16_t error = 0;
+	int16_t speed = 0;
+
+	static int16_t sum_error = 0;
+
+	error = line_position - goal;
+
+	//disables the PI regulator if the error is to small
+	//this avoids to always move as we cannot exactly be where we want and
 	//the camera is a bit noisy
 	if(abs(error) < ERROR_THRESHOLD){
 		return 0;
@@ -47,7 +79,7 @@ int16_t pi_regulator(int16_t distance, int16_t goal){
 		sum_error = -MAX_SUM_ERROR;
 	}
 
-	speed = KP * error + KI * sum_error;
+	speed = KP_ROTA * error + KI_ROTA * sum_error;
 
     return speed;
 }
@@ -82,25 +114,34 @@ static THD_FUNCTION(PiRegulator, arg) {
 			//computes the speed to give to the motors
 			//distance is modified by the time_of_flight thread
 			if (check_object_center()) {
-				r_speed = pi_regulator(get_distance(), GOAL_DISTANCE);
+				r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
 
 				if(abs(r_speed) < MIN_SPEED) {
 					r_speed = 0;
 				}
 				l_speed = r_speed;
 			} else {
-				r_speed = MIN_SPEED;
-				l_speed = -MIN_SPEED;
+				if (get_line_position() > 640) {
+					// No target in sight, the robot should rotate to find one
+					r_speed = -ROTATION_SPEED;
+					l_speed = ROTATION_SPEED;
+				} else {
+					r_speed = rotate_pi_regulator(get_line_position());
+					if(abs(r_speed) < MIN_SPEED) {
+						r_speed = 0;
+					}
+					l_speed = -r_speed;
+				}
 			}
         } else {
         	if (current_state == PICKING_OBJ) {
-        		r_speed = MIN_SPEED;
-        		l_speed = -MIN_SPEED;
+        		r_speed = -ROTATION_SPEED;
+        		l_speed = ROTATION_SPEED;
 
         		angle_counter += ANGLE_PER_UPDATE;
         	} else if ((current_state == DROPPING_OBJ)) {
-        		r_speed = -MIN_SPEED;
-				l_speed = MIN_SPEED;
+        		r_speed = ROTATION_SPEED;
+				l_speed = -ROTATION_SPEED;
 
 				angle_counter -= ANGLE_PER_UPDATE;
         	}
