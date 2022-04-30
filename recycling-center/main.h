@@ -35,13 +35,14 @@ extern "C" {
 
 #define TOF_LATERAL_THRESHOLD	50
 
-#define MOTOR_UPDT_TIME			10 // [ms]
-#define ROTATION_SPEED			150 // [steps/s]
-#define WHEEL_DIAMETER			41 // [mm]
-#define ROBOT_DIAMETER			53  // [mm]
-#define NB_STEPS_PER_TURN		2000
+#define MOTOR_UPDT_TIME			20 // [ms]
+#define ROTATION_SPEED			200 // [steps/s]
+#define WHEEL_DIAMETER			41.0f // [mm]
+#define ROBOT_DIAMETER			53.0f  // [mm]
+#define NB_STEPS_PER_TURN		1000
 #define TURN_SPEED				(360 * ROTATION_SPEED / NB_STEPS_PER_TURN) // [°/s]
-#define ANGLE_PER_UPDATE		(WHEEL_DIAMETER * TURN_SPEED / ROBOT_DIAMETER * MOTOR_UPDT_TIME / 10) // [c°]
+#define ANGLE_CORRECTION		0.8f
+#define ANGLE_PER_UPDATE		(ANGLE_CORRECTION * WHEEL_DIAMETER * TURN_SPEED / ROBOT_DIAMETER * MOTOR_UPDT_TIME / 10) // [c°]
 #define DROP_ANGLE				18000 // [c°]
 
 /** Robot wide IPC bus. */

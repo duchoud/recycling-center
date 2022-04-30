@@ -13,9 +13,13 @@
 
 enum State{
 	LOOKING_FOR_TARGET,
+	GO_TO_TARGET,
 	PICKING_OBJ,
-	DROPPING_OBJ
+	DROPPING_OBJ,
+	WAIT
 };
+
+static enum State current_state = DROPPING_OBJ;
 
 //simple PI regulator implementation
 int16_t distance_pi_regulator(int16_t distance, int16_t goal){
@@ -89,15 +93,15 @@ static THD_FUNCTION(PiRegulator, arg) {
     int16_t r_speed = 0;
     int16_t l_speed = 0;
 
-    enum State current_state = LOOKING_FOR_TARGET;
-
     // voir le type en fonction du calcul
     int16_t angle_counter = 0;
 
     while(1){
         time = chVTGetSystemTime();
-        
         if (current_state == LOOKING_FOR_TARGET) {
+        	r_speed = -ROTATION_SPEED;
+        	l_speed = ROTATION_SPEED;
+        } else if (current_state == GO_TO_TARGET) {
 			//computes the speed to give to the motors
 			//distance is modified by the time_of_flight thread
 			if ((get_distance() < TOF_ONLY_DIST) || check_object_center()) {
@@ -116,28 +120,31 @@ static THD_FUNCTION(PiRegulator, arg) {
 					l_speed = -r_speed;
 				}
 			}
-        } else {
+        } else if ((current_state == PICKING_OBJ) || (current_state == DROPPING_OBJ)) {
+        	int16_t rotation_dir = 1;
+
         	if (current_state == PICKING_OBJ) {
-        		r_speed = -ROTATION_SPEED;
-        		l_speed = ROTATION_SPEED;
-
-        		angle_counter += ANGLE_PER_UPDATE;
-        	} else if ((current_state == DROPPING_OBJ)) {
-        		r_speed = ROTATION_SPEED;
-				l_speed = -ROTATION_SPEED;
-
-				angle_counter -= ANGLE_PER_UPDATE;
+        		rotation_dir = -1;
         	}
 
-        	if ((current_state == PICKING_OBJ && angle_counter > DROP_ANGLE)
-        		|| (current_state == DROPPING_OBJ && angle_counter < -DROP_ANGLE)) {
+        	r_speed = rotation_dir * ROTATION_SPEED;
+        	l_speed = -rotation_dir * ROTATION_SPEED;
+
+        	angle_counter += (rotation_dir * ANGLE_PER_UPDATE);
+
+        	if ((current_state == PICKING_OBJ && angle_counter < -DROP_ANGLE)
+        		|| (current_state == DROPPING_OBJ && angle_counter > DROP_ANGLE)) {
         		angle_counter = 0;
         		r_speed = 0;
         		l_speed = 0;
-        		current_state = LOOKING_FOR_TARGET;
+        		current_state = WAIT;
         	}
+        } else {
+        	// in wait mode
+        	r_speed = 0;
+        	l_speed = 0;
         }
-        //applies the speed from the PI regulator and the correction for the rotation
+        //applies the speed from the PI regulator
 		right_motor_set_speed(r_speed);
 		left_motor_set_speed(l_speed);
 
