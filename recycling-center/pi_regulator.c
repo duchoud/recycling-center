@@ -93,9 +93,6 @@ static THD_FUNCTION(PiRegulator, arg) {
     int16_t r_speed = 0;
     int16_t l_speed = 0;
 
-    // voir le type en fonction du calcul
-    int16_t angle_counter = 0;
-
     while(1){
         time = chVTGetSystemTime();
         if (current_state == LOOKING_FOR_TARGET) {
@@ -121,20 +118,21 @@ static THD_FUNCTION(PiRegulator, arg) {
 				}
 			}
         } else if ((current_state == PICKING_OBJ) || (current_state == DROPPING_OBJ)) {
-        	int16_t rotation_dir = 1;
 
         	if (current_state == PICKING_OBJ) {
-        		rotation_dir = -1;
+        		r_speed = -ROTATION_SPEED;
+        		l_speed = ROTATION_SPEED;
+        	} else {
+        		r_speed = ROTATION_SPEED;
+        		l_speed = -ROTATION_SPEED;
         	}
 
-        	r_speed = rotation_dir * ROTATION_SPEED;
-        	l_speed = -rotation_dir * ROTATION_SPEED;
 
-        	angle_counter += (rotation_dir * ANGLE_PER_UPDATE);
 
-        	if ((current_state == PICKING_OBJ && angle_counter < -DROP_ANGLE)
-        		|| (current_state == DROPPING_OBJ && angle_counter > DROP_ANGLE)) {
-        		angle_counter = 0;
+        	if ((current_state == PICKING_OBJ && right_motor_get_pos() < -NB_STEPS_DROP)
+        		|| (current_state == DROPPING_OBJ && right_motor_get_pos() > NB_STEPS_DROP)) {
+
+        		right_motor_set_pos(0);
         		r_speed = 0;
         		l_speed = 0;
         		current_state = WAIT;
@@ -144,6 +142,9 @@ static THD_FUNCTION(PiRegulator, arg) {
         	r_speed = 0;
         	l_speed = 0;
         }
+
+
+
         //applies the speed from the PI regulator
 		right_motor_set_speed(r_speed);
 		left_motor_set_speed(l_speed);
@@ -153,5 +154,8 @@ static THD_FUNCTION(PiRegulator, arg) {
 }
 
 void pi_regulator_start(void){
+
+	right_motor_set_pos(0);
+
 	chThdCreateStatic(waPiRegulator, sizeof(waPiRegulator), NORMALPRIO, PiRegulator, NULL);
 }

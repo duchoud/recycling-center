@@ -38,12 +38,10 @@ extern "C" {
 #define MOTOR_UPDT_TIME			20 // [ms]
 #define ROTATION_SPEED			200 // [steps/s]
 #define WHEEL_DIAMETER			41.0f // [mm]
-#define ROBOT_DIAMETER			53.0f  // [mm]
+#define ROBOT_DIAMETER			52.0f  // [mm]
 #define NB_STEPS_PER_TURN		1000
-#define TURN_SPEED				(360 * ROTATION_SPEED / NB_STEPS_PER_TURN) // [°/s]
-#define ANGLE_CORRECTION		0.8f
-#define ANGLE_PER_UPDATE		(ANGLE_CORRECTION * WHEEL_DIAMETER * TURN_SPEED / ROBOT_DIAMETER * MOTOR_UPDT_TIME / 10) // [c°]
-#define DROP_ANGLE				18000 // [c°]
+// This is the number of motor steps required for the robot to do a u-turn (hence the / 2)
+#define NB_STEPS_DROP			(NB_STEPS_PER_TURN * ROBOT_DIAMETER / WHEEL_DIAMETER / 2)
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;
