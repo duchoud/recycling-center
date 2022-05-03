@@ -9,14 +9,13 @@
 
 #include <process_image.h>
 
-
 enum COLOUR_LOOKED{
 	RED,
 	GREEN,
 	BLACK
 };
 
-static bool INITIALISATION = 0;							//search base or search object
+static bool is_looking_for_base = 0;							//search base or search object
 static uint16_t line_position = IMAGE_BUFFER_SIZE/2;	//middle
 static enum COLOUR_LOOKED current_colour = GREEN;
 
@@ -91,7 +90,7 @@ void extract_object_position(uint8_t *buffer){
 		//compare the mean colour numbers of the object we see and the object we search
 		//and
 		bool wrong_colour = false;
-		if (INITIALISATION){
+		if (is_looking_for_base){
 			if (current_colour == RED && meancolour > RED_THRESHOLD) {
 				wrong_colour = true;
 			} else if (current_colour == GREEN && meancolour > GREEN_THRESHOLD){
@@ -204,4 +203,8 @@ uint16_t get_line_position(void){
 void process_image_start(void){
 	chThdCreateStatic(waProcessImage, sizeof(waProcessImage), NORMALPRIO, ProcessImage, NULL);
 	chThdCreateStatic(waCaptureImage, sizeof(waCaptureImage), NORMALPRIO, CaptureImage, NULL);
+}
+
+void set_looking_for_base(bool value) {
+	is_looking_for_base = value;
 }

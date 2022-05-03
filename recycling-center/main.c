@@ -16,13 +16,13 @@
 #include <process_image.h>
 #include <distances.h>
 
-enum FSM{
+enum FSM {
 	FIND_OBJECT,
 	GET_OBJECT,
 	FIND_WALL,
 	GET_WALL,
-	FIND_START,
-	GET_START
+	FIND_BASE,
+	GET_BASE
 };
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
@@ -67,11 +67,13 @@ int main(void)
 	pi_regulator_start();
 	//process_image_start();
 
+
     /* Infinite loop. */
     while (1) {
     	//waits 1 second
-    	//uint16_t distance = get_distance();
-    	//chprintf((BaseSequentialStream *)&SD3, "Disatnce = %d \r\n", distance);
+    	if (is_action_done()) {
+    		chprintf((BaseSequentialStream *)&SD3, "Success !\r\n");
+    	}
         chThdSleepMilliseconds(1000);
     }
 }

@@ -11,15 +11,8 @@
 #include <process_image.h>
 #include <distances.h>
 
-enum State{
-	LOOKING_FOR_TARGET,
-	GO_TO_TARGET,
-	PICKING_OBJ,
-	DROPPING_OBJ,
-	WAIT
-};
-
-static enum State current_state = DROPPING_OBJ;
+static enum PI_State current_state = DROPPING_OBJ;
+static bool current_action_done = false;
 
 //simple PI regulator implementation
 int16_t distance_pi_regulator(int16_t distance, int16_t goal){
@@ -127,8 +120,6 @@ static THD_FUNCTION(PiRegulator, arg) {
         		l_speed = -ROTATION_SPEED;
         	}
 
-
-
         	if ((current_state == PICKING_OBJ && right_motor_get_pos() < -NB_STEPS_DROP)
         		|| (current_state == DROPPING_OBJ && right_motor_get_pos() > NB_STEPS_DROP)) {
 
@@ -139,11 +130,10 @@ static THD_FUNCTION(PiRegulator, arg) {
         	}
         } else {
         	// in wait mode
+        	current_action_done = true;
         	r_speed = 0;
         	l_speed = 0;
         }
-
-
 
         //applies the speed from the PI regulator
 		right_motor_set_speed(r_speed);
@@ -158,4 +148,17 @@ void pi_regulator_start(void){
 	right_motor_set_pos(0);
 
 	chThdCreateStatic(waPiRegulator, sizeof(waPiRegulator), NORMALPRIO, PiRegulator, NULL);
+}
+
+bool is_action_done(void) {
+	return current_action_done;
+}
+
+void switch_state(enum PI_State new_state, bool is_looking_for_base) {
+	right_motor_set_pos(0);
+	current_action_done = false;
+
+	set_looking_for_base(is_looking_for_base);
+
+	current_state = new_state;
 }
