@@ -16,9 +16,10 @@ enum COLOUR_LOOKED{
 	BLACK
 };
 
-
+static bool INITIALISATION = 0;							//search base or search object
 static uint16_t line_position = IMAGE_BUFFER_SIZE/2;	//middle
 static enum COLOUR_LOOKED current_colour = GREEN;
+
 
 //semaphore
 static BSEMAPHORE_DECL(image_ready_sem, TRUE);
@@ -34,7 +35,8 @@ void extract_object_position(uint8_t *buffer){
 
 	do{
 		wrong_line = 0;
-		//search for a begin
+
+		//find the beginning of the left part of the object
 		while(stop == 0 && i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE))
 		{ 
 			//the slope must at least be WIDTH_SLOPE wide and is compared
@@ -46,7 +48,8 @@ void extract_object_position(uint8_t *buffer){
 		    }
 		    i++;
 		}
-		//if a begin was found, search for an end
+
+		//if a begin was found, find the end of the right part of the object
 		if (i < (IMAGE_BUFFER_SIZE - WIDTH_SLOPE) && begin)
 		{
 		    stop = 0;
@@ -72,16 +75,36 @@ void extract_object_position(uint8_t *buffer){
 		}
 
 		//if a line too small has been detected, continues the search
-		uint32_t meancolour = 0;
+		uint32_t meancolour = 0;			//the mean colour number of the object
 		for(int i = begin; i < end; i++){
 			meancolour += buffer[i];
 		}
 		meancolour /= (end-begin);
 
-		if ((current_colour == RED && meancolour > RED_THRESHOLD) 	  ||
-			(current_colour == GREEN && meancolour > GREEN_THRESHOLD) ||
-			(!line_not_found && (end-begin) < MIN_LINE_WIDTH)) {
+		//use mean to clearly see the object on python
+		for(int i = begin; i < end; i++){
+			if(abs(meancolour - buffer[i]) < THRESHOLD_COLOUR){
+				buffer[i] = meancolour;
+			}
+		}
 
+		//compare the mean colour numbers of the object we see and the object we search
+		//and
+		bool wrong_colour = false;
+		if (INITIALISATION){
+			if (current_colour == RED && meancolour > RED_THRESHOLD) {
+				wrong_colour = true;
+			} else if (current_colour == GREEN && meancolour > GREEN_THRESHOLD){
+				wrong_colour = true;
+			}
+		} else{
+			if (current_colour == BLACK && meancolour > BLACK_THRESHOLD) {
+				wrong_colour = true;
+			}
+		}
+
+		//if the object we see is too thin
+		if(wrong_colour || (!line_not_found && (end-begin) < MIN_LINE_WIDTH)){
 			i = end;
 			begin = 0;
 			end = 0;
@@ -95,7 +118,7 @@ void extract_object_position(uint8_t *buffer){
 		end = 0;
 		line_position = NOTFOUND;
 	}else{
-		line_position = (begin + end)/2; //gives the line position.
+		line_position = (begin + end)/2; //gives the line position of the center of the object.
 	}
 	//chprintf((BaseSequentialStream *)&SDU1, "line position=%d \r\n", line_position);
 }
