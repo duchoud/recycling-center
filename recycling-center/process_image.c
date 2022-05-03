@@ -74,42 +74,41 @@ void extract_object_position(uint8_t *buffer){
 		    line_not_found = 1;
 		}
 
-		//if a line too small has been detected, continues the search
-		uint32_t meancolour = 0;			//the mean colour number of the object
-		for(int i = begin; i < end; i++){
-			meancolour += buffer[i];
-		}
-		meancolour /= (end-begin);
-
-		//use mean to clearly see the object on python
-		for(int i = begin; i < end; i++){
-			if(abs(meancolour - buffer[i]) < THRESHOLD_COLOUR){
-				buffer[i] = meancolour;
+		if (!line_not_found) {
+			//if a line too small has been detected, continues the search
+			uint32_t meancolour = 0;			//the mean colour number of the object
+			for(int i = begin; i < end; i++){
+				meancolour += buffer[i];
 			}
-		}
+			meancolour /= (end-begin);
 
-		//compare the mean colour numbers of the object we see and the object we search
-		//and
-		bool wrong_colour = false;
-		if (INITIALISATION){
+			//use mean to clearly see the object on python
+			for(int i = begin; i < end; i++){
+				if(abs(meancolour - buffer[i]) < THRESHOLD_COLOUR){
+					buffer[i] = meancolour;
+				}
+			}
+			chprintf((BaseSequentialStream *)&SDU1, "mean=%d  ", meancolour);
+			//compare the mean colour numbers of the object we see and the object we search
+			//and
+			bool wrong_colour = false;
 			if (current_colour == RED && meancolour > RED_THRESHOLD) {
 				wrong_colour = true;
 			} else if (current_colour == GREEN && meancolour > GREEN_THRESHOLD){
 				wrong_colour = true;
 			}
-		} else{
 			if (current_colour == BLACK && meancolour > BLACK_THRESHOLD) {
 				wrong_colour = true;
 			}
-		}
 
-		//if the object we see is too thin
-		if(wrong_colour || (!line_not_found && (end-begin) < MIN_LINE_WIDTH)){
-			i = end;
-			begin = 0;
-			end = 0;
-			stop = 0;
-			wrong_line = 1;
+			//if the object we see is too thin
+			if(wrong_colour || (!line_not_found && (end-begin) < MIN_LINE_WIDTH)){
+				i = end;
+				begin = 0;
+				end = 0;
+				stop = 0;
+				wrong_line = 1;
+			}
 		}
 	}while(wrong_line);
 
@@ -120,7 +119,7 @@ void extract_object_position(uint8_t *buffer){
 	}else{
 		line_position = (begin + end)/2; //gives the line position of the center of the object.
 	}
-	//chprintf((BaseSequentialStream *)&SDU1, "line position=%d \r\n", line_position);
+	chprintf((BaseSequentialStream *)&SDU1, "line position=%d \r\n", line_position);
 }
 
 static THD_WORKING_AREA(waCaptureImage, 256);
@@ -168,18 +167,25 @@ static THD_FUNCTION(ProcessImage, arg) {
 			//uint16_t blue = (img_buff_ptr[2 * i + 1] & 0b11111);
 			uint16_t red = (img_buff_ptr[2 * i] & 0b11111000);
 			uint16_t green =  ((((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5))/2) << 3;
+			uint16_t black = (red+green)/2;
 
-			if((get_selector() % 2) == 0) {
+			if((get_selector() % 3) == 0) {
 				current_colour = GREEN;
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 				red = red + dist * dist * COEFF_MOD_CAM * dist ;
 				image[i] = red;
 			}
-			if((get_selector() % 2) == 1){
+			if((get_selector() % 3) == 1){
 				current_colour = RED;
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 				green = green + dist * dist * COEFF_MOD_CAM * dist;
 				image[i] = green;
+			}
+			if((get_selector() % 3) == 2){
+				current_colour = BLACK;
+				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+				black = black + dist * dist * COEFF_MOD_CAM * dist;
+				image[i] = black;
 			}
 		}
 
