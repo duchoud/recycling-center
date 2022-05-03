@@ -33,6 +33,7 @@ extern "C" {
 #define RED_THRESHOLD			35		//experimentally found value
 #define GREEN_THRESHOLD			45		//experimentally found value
 #define BLACK_THRESHOLD			10		//experimentally found value
+#define THRESHOLD_COLOUR		11		//experimentally found value
 
 #define TOF_LATERAL_THRESHOLD	50
 
