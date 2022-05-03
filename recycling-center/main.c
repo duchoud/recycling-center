@@ -16,6 +16,15 @@
 #include <process_image.h>
 #include <distances.h>
 
+enum FSM{
+	FIND_OBJECT,
+	GET_OBJECT,
+	FIND_WALL,
+	GET_WALL,
+	FIND_START,
+	GET_START
+};
+
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
 {
 	chSequentialStreamWrite((BaseSequentialStream *)&SD3, (uint8_t*)"START", 5);
@@ -55,7 +64,7 @@ int main(void)
 	distances_start();
 
 	//stars the threads for the pi regulator and the processing of the image
-	pi_regulator_start();
+	//pi_regulator_start();
 	process_image_start();
 
     /* Infinite loop. */

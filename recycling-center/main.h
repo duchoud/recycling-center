@@ -32,6 +32,7 @@ extern "C" {
 #define NOTFOUND				650		//line not found uint16 greater than IMAGE_BUFFER_SIZE
 #define RED_THRESHOLD			35		//experimentally found value
 #define GREEN_THRESHOLD			45		//experimentally found value
+#define BLACK_THRESHOLD			10		//experimentally found value
 
 #define TOF_LATERAL_THRESHOLD	10
 
