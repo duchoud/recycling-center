@@ -43,9 +43,9 @@ extern "C" {
 #define ROBOT_DIAMETER			52.0f  // [mm]
 #define NB_STEPS_PER_TURN		1000
 // This is the number of motor steps required for the robot to do a u-turn (hence the / 2)
-#define NB_STEPS_DROP			(NB_STEPS_PER_TURN * ROBOT_DIAMETER / WHEEL_DIAMETER / 2)
-#define BACKWARD_DIST			70 // [mm]
-#define STEPS_TO_GO_BACK		(BACKWARD_DIST / (WHEEL_DIAMETER / 2) * 1000 / (2 * M_PI))
+#define NB_STEPS_PICK			(NB_STEPS_PER_TURN * ROBOT_DIAMETER / WHEEL_DIAMETER / 2)
+#define BACKWARD_DIST			80 // [mm]
+#define NB_STEPS_DROP			(BACKWARD_DIST / (WHEEL_DIAMETER / 2) * 1000 / (2 * M_PI))
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;

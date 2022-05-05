@@ -128,27 +128,29 @@ static THD_FUNCTION(PiRegulator, arg) {
 					l_speed = -r_speed;
 				}
 			}
-        } else if ((current_state == PICKING_OBJ) || (current_state == DROPPING_OBJ)) {
+        } else if (current_state == PICKING_OBJ) {
+        	r_speed = -ROTATION_SPEED;
+        	l_speed = ROTATION_SPEED;
 
-        	if (current_state == PICKING_OBJ) {
-        		r_speed = -ROTATION_SPEED;
-        		l_speed = ROTATION_SPEED;
-        	} else {
-        		r_speed = ROTATION_SPEED;
-        		l_speed = -ROTATION_SPEED;
-        	}
-
-        	if ((current_state == PICKING_OBJ && right_motor_get_pos() < -NB_STEPS_DROP)
-        		|| (current_state == DROPPING_OBJ && right_motor_get_pos() > NB_STEPS_DROP)) {
-
+        	if (right_motor_get_pos() < -NB_STEPS_PICK) {
         		right_motor_set_pos(0);
-        		r_speed = 0;
-        		l_speed = 0;
-        		current_state = WAIT;
+				r_speed = 0;
+				l_speed = 0;
+				current_state = WAIT;
         	}
+        } else if (current_state == DROPPING_OBJ) {
+			r_speed = -ROTATION_SPEED;
+			l_speed = -ROTATION_SPEED;
+
+			if (right_motor_get_pos() < -NB_STEPS_DROP) {
+				right_motor_set_pos(0);
+				r_speed = 0;
+				l_speed = 0;
+				current_state = WAIT;
+			}
         } else {
         	// in wait mode
-        	current_action_done = true;
+        	//current_action_done = true;
         	r_speed = 0;
         	l_speed = 0;
         }
