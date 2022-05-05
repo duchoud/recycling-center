@@ -4,6 +4,7 @@
 #include <usbcfg.h>
 #include <selector.h>
 
+#include "leds.h"
 #include <main.h>
 #include <camera/po8030.h>
 
@@ -119,6 +120,27 @@ void extract_object_position(uint8_t *buffer){
 	//chprintf((BaseSequentialStream *)&SDU1, "line position=%d \r\n", line_position);
 }
 
+void set_led_rgb(void){
+	clear_leds();
+	switch (current_colour){
+		case RED:
+			set_rgb_led(LED6,MAX_COLOUR,0,0);
+			set_rgb_led(LED2,MAX_COLOUR,0,0);
+			break;
+
+		case GREEN:
+			set_rgb_led(LED6,0,MAX_COLOUR,0);
+			set_rgb_led(LED2,0,MAX_COLOUR,0);
+			break;
+
+		case BLACK:
+			set_rgb_led(LED6,MAX_COLOUR,MAX_COLOUR,MAX_COLOUR);
+			set_rgb_led(LED2,MAX_COLOUR,MAX_COLOUR,MAX_COLOUR);
+			break;
+	}
+}
+
+
 static THD_WORKING_AREA(waCaptureImage, 256);
 static THD_FUNCTION(CaptureImage, arg) {
 
@@ -171,18 +193,22 @@ static THD_FUNCTION(ProcessImage, arg) {
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 				black = black + dist * dist * COEFF_MOD_CAM * dist;
 				image[i] = black;
+				set_led_rgb();
 			} else {
 				if((get_selector() % 2) == 0) {
 					current_colour = GREEN;
 					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 					red = red + dist * dist * COEFF_MOD_CAM * dist ;
 					image[i] = red;
+					set_led_rgb();
+
 				}
 				if((get_selector() % 2) == 1){
 					current_colour = RED;
 					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 					green = green + dist * dist * COEFF_MOD_CAM * dist;
 					image[i] = green;
+					set_led_rgb();
 				}
 			}
 

@@ -35,6 +35,7 @@ extern "C" {
 #define BLACK_THRESHOLD			35		//experimentally found value
 #define MIN_BLACK				25
 #define THRESHOLD_COLOUR		20		//experimentally found value
+#define MAX_COLOUR				255		//max value on 8 bits
 
 #define TOF_LATERAL_THRESHOLD	50
 

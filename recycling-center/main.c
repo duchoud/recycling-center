@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "spi_comm.h"
+#include "spi_comm.h"
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
@@ -65,6 +67,7 @@ int main(void)
 	motors_init();
 	//inits the sensors
 	distances_start();
+	spi_comm_start();
 
 	//stars the threads for the pi regulator and the processing of the image
 	pi_regulator_start();
