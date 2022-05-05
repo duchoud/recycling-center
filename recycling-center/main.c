@@ -21,8 +21,8 @@ enum FSM{
 	GET_OBJECT,
 	FIND_WALL,
 	GET_WALL,
-	FIND_START,
-	GET_START
+	FIND_BASE,
+	GET_BASE
 };
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
