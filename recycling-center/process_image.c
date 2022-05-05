@@ -15,7 +15,7 @@ enum COLOUR_LOOKED{
 	BLACK
 };
 
-static bool is_looking_for_base = 0;							//search base or search object
+static bool is_looking_for_base = 0;					//search base or search object
 static uint16_t line_position = IMAGE_BUFFER_SIZE/2;	//middle
 static enum COLOUR_LOOKED current_colour = GREEN;
 
@@ -87,16 +87,14 @@ void extract_object_position(uint8_t *buffer){
 					buffer[i] = meancolour;
 				}
 			}
-			chprintf((BaseSequentialStream *)&SDU1, "mean=%d  ", meancolour);
+			//chprintf((BaseSequentialStream *)&SDU1, "mean=%d  ", meancolour);
 			//compare the mean colour numbers of the object we see and the object we search
-			//and
 			bool wrong_colour = false;
 			if (current_colour == RED && meancolour > RED_THRESHOLD) {
 				wrong_colour = true;
 			} else if (current_colour == GREEN && meancolour > GREEN_THRESHOLD){
 				wrong_colour = true;
-			}
-			if (current_colour == BLACK && meancolour > BLACK_THRESHOLD) {
+			} else if (current_colour == BLACK && meancolour > BLACK_THRESHOLD) {
 				wrong_colour = true;
 			}
 
@@ -118,7 +116,7 @@ void extract_object_position(uint8_t *buffer){
 	}else{
 		line_position = (begin + end)/2; //gives the line position of the center of the object.
 	}
-	chprintf((BaseSequentialStream *)&SDU1, "line position=%d \r\n", line_position);
+	//chprintf((BaseSequentialStream *)&SDU1, "line position=%d \r\n", line_position);
 }
 
 static THD_WORKING_AREA(waCaptureImage, 256);
@@ -168,24 +166,26 @@ static THD_FUNCTION(ProcessImage, arg) {
 			uint16_t green =  ((((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5))/2) << 3;
 			uint16_t black = (red+green)/2;
 
-			if((get_selector() % 3) == 0) {
-				current_colour = GREEN;
-				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-				red = red + dist * dist * COEFF_MOD_CAM * dist ;
-				image[i] = red;
-			}
-			if((get_selector() % 3) == 1){
-				current_colour = RED;
-				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-				green = green + dist * dist * COEFF_MOD_CAM * dist;
-				image[i] = green;
-			}
-			if((get_selector() % 3) == 2){
+			if (is_looking_for_base) {
 				current_colour = BLACK;
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 				black = black + dist * dist * COEFF_MOD_CAM * dist;
 				image[i] = black;
+			} else {
+				if((get_selector() % 2) == 0) {
+					current_colour = GREEN;
+					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+					red = red + dist * dist * COEFF_MOD_CAM * dist ;
+					image[i] = red;
+				}
+				if((get_selector() % 2) == 1){
+					current_colour = RED;
+					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+					green = green + dist * dist * COEFF_MOD_CAM * dist;
+					image[i] = green;
+				}
 			}
+
 		}
 
 		//search for an object in the image and gets its position in pixels

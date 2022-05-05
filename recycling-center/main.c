@@ -19,8 +19,10 @@
 enum FSM {
 	FIND_OBJECT,
 	GET_OBJECT,
+	PICK_OBJECT,
 	FIND_WALL,
 	GET_WALL,
+	DROP_OBJECT,
 	FIND_BASE,
 	GET_BASE
 };
@@ -67,12 +69,57 @@ int main(void)
 	//pi_regulator_start();
 	process_image_start();
 
+	enum FSM current_state = FIND_BASE;
+	switch_state(LOOKING_FOR_TARGET, true);
 
     /* Infinite loop. */
     while (1) {
     	//waits 1 second
     	if (is_action_done()) {
-    		chprintf((BaseSequentialStream *)&SD3, "Success !\r\n");
+    		switch (current_state) {
+    		case FIND_OBJECT:
+    			current_state = GET_OBJECT;
+    			switch_state(GO_TO_TARGET, false);
+    			break;
+
+    		case GET_OBJECT:
+    			current_state = PICK_OBJECT;
+    			switch_state(PICKING_OBJ, false);
+    			break;
+
+    		case PICK_OBJECT:
+    			current_state = FIND_WALL;
+    			switch_state(LOOKING_FOR_TARGET, false);
+    			break;
+
+    		case FIND_WALL:
+    			current_state = GET_WALL;
+    			switch_state(GO_TO_TARGET, false);
+    			break;
+
+    		case GET_WALL:
+    			current_state = DROP_OBJECT;
+    			switch_state(DROPPING_OBJ, false);
+    			break;
+
+    		case DROP_OBJECT:
+    			current_state = FIND_BASE;
+    			switch_state(LOOKING_FOR_TARGET, true);
+    			break;
+
+    		case FIND_BASE:
+    			current_state = GET_BASE;
+    			switch_state(GO_TO_TARGET, true);
+    			break;
+
+    		case GET_BASE:
+    			current_state = FIND_OBJECT;
+    			switch_state(LOOKING_FOR_TARGET, false);
+    			break;
+
+    		default:
+    			break;
+    		}
     	}
         chThdSleepMilliseconds(1000);
     }
