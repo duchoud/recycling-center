@@ -85,7 +85,7 @@ int main(void)
     	//chprintf((BaseSequentialStream *)&SDU1, "state=%d  ", current_state);
     	if (is_action_done()) {
 
-    		enum PI_State new_pi_state = END;
+    		enum PI_State new_pi_state = PI_END;
     		bool is_looking_for_base = false;
 
     		if (current_state != FSM_END) {
