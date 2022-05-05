@@ -16,7 +16,7 @@ enum COLOUR_LOOKED{
 };
 
 static bool is_looking_for_base = 0;					//search base or search object
-static uint16_t line_position = IMAGE_BUFFER_SIZE/2;	//middle
+static uint16_t line_position = NOTFOUND;
 static enum COLOUR_LOOKED current_colour = GREEN;
 
 
@@ -87,7 +87,7 @@ void extract_object_position(uint8_t *buffer){
 					buffer[i] = meancolour;
 				}
 			}
-			//chprintf((BaseSequentialStream *)&SDU1, "mean=%d  ", meancolour);
+			//chprintf((BaseSequentialStream *)&SDU1, "mean=%d  \n\r", meancolour);
 			//compare the mean colour numbers of the object we see and the object we search
 			bool wrong_colour = false;
 			if (current_colour == RED && meancolour > RED_THRESHOLD) {
@@ -186,6 +186,25 @@ static THD_FUNCTION(ProcessImage, arg) {
 				}
 			}
 
+			/*if((get_selector() % 3) == 0) {
+				current_colour = GREEN;
+				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+				red = red + dist * dist * COEFF_MOD_CAM * dist ;
+				image[i] = red;
+			}
+			if((get_selector() % 3) == 1){
+				current_colour = RED;
+				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+				green = green + dist * dist * COEFF_MOD_CAM * dist;
+				image[i] = green;
+			}
+			if((get_selector() % 3) == 2){
+				current_colour = BLACK;
+				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+				black = black + dist * dist * COEFF_MOD_CAM * dist;
+				image[i] = black;
+			}*/
+
 		}
 
 		//search for an object in the image and gets its position in pixels
@@ -193,7 +212,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		if(send_to_computer){
 			//sends to the computer the image
-			SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
+			//SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
 		}
 		//invert the bool
 		send_to_computer = !send_to_computer;
@@ -212,5 +231,6 @@ void process_image_start(void){
 }
 
 void set_looking_for_base(bool value) {
+	line_position = NOTFOUND;
 	is_looking_for_base = value;
 }

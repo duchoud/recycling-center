@@ -24,7 +24,8 @@ enum FSM {
 	GET_WALL,
 	DROP_OBJECT,
 	FIND_BASE,
-	GET_BASE
+	GET_BASE,
+	FSM_END
 };
 
 void SendUint8ToComputer(uint8_t* data, uint16_t size) 
@@ -67,74 +68,85 @@ int main(void)
 
 	//stars the threads for the pi regulator and the processing of the image
 	pi_regulator_start();
-	//process_image_start();
+	process_image_start();
 
+	// The robot goes to its base at the beginning as initialization, it will then return there a 2nd time
+	// at the end and should stay there, we use a counter to track this
+	uint8_t end_fsm = 0;
 	enum FSM current_state = FIND_BASE;
-	switch_state(PICKING_OBJ, true);
+	switch_state(LOOKING_FOR_TARGET, true, 1);
 
     /* Infinite loop. */
     while (1) {
     	//waits 1 second
+    	//chprintf((BaseSequentialStream *)&SDU1, "state=%d  ", current_state);
     	if (is_action_done()) {
 
+    		enum PI_State new_pi_state = END;
     		bool is_looking_for_base = false;
-    		enum PI_State new_pi_state;
 
-    		switch (current_state) {
-    		case FIND_OBJECT:
-    			current_state = GET_OBJECT;
-    			new_pi_state = GO_TO_TARGET;
-    			is_looking_for_base = false;
-    			break;
+    		if (current_state != FSM_END) {
+				// If it equals 1, the robot turns clockwise
+				int16_t look_dir = 1;
 
-    		case GET_OBJECT:
-    			current_state = PICK_OBJECT;
-    			new_pi_state = PICKING_OBJ;
-    			is_looking_for_base = false;
-    			break;
+				switch (current_state) {
+				case FIND_OBJECT:
+					current_state = GET_OBJECT;
+					new_pi_state = GO_TO_TARGET;
+					break;
 
-    		case PICK_OBJECT:
-    			current_state = FIND_WALL;
-    			new_pi_state = LOOKING_FOR_TARGET;
-    			is_looking_for_base = false;
-    			break;
+				case GET_OBJECT:
+					current_state = PICK_OBJECT;
+					new_pi_state = PICKING_OBJ;
+					break;
 
-    		case FIND_WALL:
-    			current_state = GET_WALL;
-    			new_pi_state = GO_TO_TARGET;
-    			is_looking_for_base = false;
-    			break;
+				case PICK_OBJECT:
+					current_state = FIND_WALL;
+					new_pi_state = LOOKING_FOR_TARGET;
+					look_dir = 1;
+					break;
 
-    		case GET_WALL:
-    			current_state = DROP_OBJECT;
-    			new_pi_state = DROPPING_OBJ;
-    			is_looking_for_base = false;
-    			break;
+				case FIND_WALL:
+					current_state = GET_WALL;
+					new_pi_state = GO_TO_TARGET;
+					break;
 
-    		case DROP_OBJECT:
-    			current_state = FIND_BASE;
-    			new_pi_state = LOOKING_FOR_TARGET;
-    			is_looking_for_base = true;
-    			break;
+				case GET_WALL:
+					current_state = DROP_OBJECT;
+					new_pi_state = DROPPING_OBJ;
+					break;
 
-    		case FIND_BASE:
-    			current_state = GET_BASE;
-    			new_pi_state = GO_TO_TARGET;
-    			is_looking_for_base = true;
-    			break;
+				case DROP_OBJECT:
+					current_state = FIND_BASE;
+					new_pi_state = LOOKING_FOR_TARGET;
+					look_dir = -1;
+					is_looking_for_base = true;
+					break;
 
-    		case GET_BASE:
-    			current_state = FIND_OBJECT;
-    			new_pi_state = LOOKING_FOR_TARGET;
-    			is_looking_for_base = false;
-    			break;
+				case FIND_BASE:
+					current_state = GET_BASE;
+					new_pi_state = GO_TO_TARGET;
+					is_looking_for_base = true;
+					break;
 
-    		default:
-    			break;
+				case GET_BASE:
+					end_fsm++;
+					if (end_fsm == 1) {
+						current_state = FIND_OBJECT;
+						new_pi_state = LOOKING_FOR_TARGET;
+						look_dir = -1;
+					} else if (end_fsm == 2) {
+						current_state = FSM_END;
+						new_pi_state = PI_END;
+					}
+					break;
+
+				default:
+					break;
+				}
+
+				switch_state(new_pi_state, is_looking_for_base, look_dir);
     		}
-
-    		switch_state(new_pi_state, is_looking_for_base);
-
     	}
         chThdSleepMilliseconds(1000);
     }

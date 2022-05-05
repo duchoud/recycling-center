@@ -30,9 +30,10 @@ extern "C" {
 #define COEFF_MOD_CAM			0.00000055f //to multiply with the cube of the distance to modify the error of the edge of the camera
 #define HTHRESHOLD				30  	//minimum value of the jump to be detected
 #define NOTFOUND				650		//line not found uint16 greater than IMAGE_BUFFER_SIZE
-#define RED_THRESHOLD			42		//experimentally found value
+#define RED_THRESHOLD			45		//experimentally found value
 #define GREEN_THRESHOLD			55		//experimentally found value
 #define BLACK_THRESHOLD			35		//experimentally found value
+#define MIN_BLACK				25
 #define THRESHOLD_COLOUR		20		//experimentally found value
 
 #define TOF_LATERAL_THRESHOLD	50
@@ -43,7 +44,7 @@ extern "C" {
 #define ROBOT_DIAMETER			52.0f  // [mm]
 #define NB_STEPS_PER_TURN		1000
 // This is the number of motor steps required for the robot to do a u-turn (hence the / 2)
-#define NB_STEPS_PICK			(NB_STEPS_PER_TURN * ROBOT_DIAMETER / WHEEL_DIAMETER / 2)
+#define NB_STEPS_PICK			(NB_STEPS_PER_TURN * ROBOT_DIAMETER / WHEEL_DIAMETER * 3 / 4)
 #define BACKWARD_DIST			80 // [mm]
 #define NB_STEPS_DROP			(BACKWARD_DIST / (WHEEL_DIAMETER / 2) * 1000 / (2 * M_PI))
 

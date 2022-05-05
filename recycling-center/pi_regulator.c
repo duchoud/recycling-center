@@ -11,8 +11,9 @@
 #include <process_image.h>
 #include <distances.h>
 
-static enum PI_State current_state = DROPPING_OBJ;
-static bool current_action_done = false;
+static enum PI_State current_state = LOOKING_FOR_TARGET;
+static bool current_action_done = true;
+static int16_t look_direction = 1;
 
 //simple PI regulator implementation
 int16_t distance_pi_regulator(int16_t distance, int16_t goal){
@@ -86,14 +87,12 @@ static THD_FUNCTION(PiRegulator, arg) {
     int16_t r_speed = 0;
     int16_t l_speed = 0;
 
-    bool drop_first_stage = true;
-
     while(1){
         time = chVTGetSystemTime();
         if (current_state == LOOKING_FOR_TARGET) {
 
-        	r_speed = -ROTATION_SPEED;
-        	l_speed = ROTATION_SPEED;
+        	r_speed = -look_direction * ROTATION_SPEED;
+        	l_speed =  look_direction * ROTATION_SPEED;
 
         	if (get_line_position() != NOTFOUND) {
         		r_speed = 0;
@@ -149,8 +148,10 @@ static THD_FUNCTION(PiRegulator, arg) {
 				current_state = WAIT;
 			}
         } else {
-        	// in wait mode
-        	//current_action_done = true;
+        	// in wait or end mode
+        	if (current_state == WAIT) {
+        		current_action_done = true;
+        	}
         	r_speed = 0;
         	l_speed = 0;
         }
@@ -174,11 +175,13 @@ bool is_action_done(void) {
 	return current_action_done;
 }
 
-void switch_state(enum PI_State new_state, bool is_looking_for_base) {
+void switch_state(enum PI_State new_state, bool is_looking_for_base, int16_t look_dir) {
 	right_motor_set_pos(0);
 	current_action_done = false;
 
 	set_looking_for_base(is_looking_for_base);
+
+	look_direction = look_dir;
 
 	current_state = new_state;
 }
