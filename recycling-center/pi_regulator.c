@@ -86,23 +86,41 @@ static THD_FUNCTION(PiRegulator, arg) {
     int16_t r_speed = 0;
     int16_t l_speed = 0;
 
+    bool drop_first_stage = true;
+
     while(1){
         time = chVTGetSystemTime();
         if (current_state == LOOKING_FOR_TARGET) {
+
         	r_speed = -ROTATION_SPEED;
         	l_speed = ROTATION_SPEED;
+
+        	if (get_line_position() != NOTFOUND) {
+        		r_speed = 0;
+				l_speed = 0;
+				current_state = WAIT;
+        	}
+
         } else if (current_state == GO_TO_TARGET) {
 			//computes the speed to give to the motors
 			//distance is modified by the time_of_flight thread
 			if ((get_distance() < TOF_ONLY_DIST) || check_object_center()) {
-				r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
 
-				if(abs(r_speed) < MIN_SPEED) {
+				if (abs(get_distance() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
 					r_speed = 0;
+					l_speed = 0;
+					current_state = WAIT;
+				} else {
+					r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
+
+					if(abs(r_speed) < MIN_SPEED) {
+						r_speed = 0;
+					}
+					l_speed = r_speed;
 				}
-				l_speed = r_speed;
+
 			} else {
-				if (get_line_position() > 640) {
+				if (get_line_position() == NOTFOUND) {
 					r_speed = 0;
 					l_speed = 0;
 				} else {
