@@ -16,7 +16,7 @@
 #include <process_image.h>
 #include <distances.h>
 
-enum FSM{
+enum FSM {
 	FIND_OBJECT,
 	GET_OBJECT,
 	FIND_WALL,
@@ -67,11 +67,13 @@ int main(void)
 	//pi_regulator_start();
 	process_image_start();
 
+
     /* Infinite loop. */
     while (1) {
     	//waits 1 second
-    	//uint16_t distance = get_distance();
-    	//chprintf((BaseSequentialStream *)&SD3, "Disatnce = %d \r\n", distance);
+    	if (is_action_done()) {
+    		chprintf((BaseSequentialStream *)&SD3, "Success !\r\n");
+    	}
         chThdSleepMilliseconds(1000);
     }
 }
