@@ -202,7 +202,6 @@ static THD_FUNCTION(ProcessImage, arg) {
 					image[i] = green;
 				}
 			}
-
 			/*if((get_selector() % 3) == 0) {
 				current_colour = GREEN;
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);

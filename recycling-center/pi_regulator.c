@@ -46,6 +46,12 @@ int16_t distance_pi_regulator(int16_t distance, int16_t goal){
 
 	speed = KP_DIST * error + KI_DIST * sum_error_dist;
 
+	if (speed > MAX_LINEAR_SPEED) {
+		speed = MAX_LINEAR_SPEED;
+	} else if (speed < -MAX_LINEAR_SPEED) {
+		speed = -MAX_LINEAR_SPEED;
+	}
+
     return speed;
 }
 
@@ -75,8 +81,6 @@ int16_t rotate_p_regulator(uint16_t line_position){
 
 	speed = KP_ROTA * error;// + KI_ROTA * (error - prev_error);
 
-	//prev_error = error;
-
     return (int16_t) speed;
 }
 
@@ -103,12 +107,13 @@ static THD_FUNCTION(PiRegulator, arg) {
 
     while(1){
         time = chVTGetSystemTime();
+
         if (current_state == LOOKING_FOR_TARGET) {
 
-        	r_speed = -look_direction * ROTATION_SPEED;
-        	l_speed =  look_direction * ROTATION_SPEED;
+        	r_speed = -look_direction * ROTATIONAL_SPEED;
+        	l_speed =  look_direction * ROTATIONAL_SPEED;
 
-        	if (get_line_position() != NOTFOUND) {
+        	if ((get_distance() >TOF_ONLY_DIST) && (get_line_position() != NOTFOUND)) {
         		r_speed = 0;
 				l_speed = 0;
 				current_state = WAIT;
@@ -138,9 +143,6 @@ static THD_FUNCTION(PiRegulator, arg) {
 					} else {
 						r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
 
-						if(abs(r_speed) < MIN_SPEED) {
-							r_speed = 0;
-						}
 						l_speed = r_speed;
 					}
 				}
@@ -157,8 +159,8 @@ static THD_FUNCTION(PiRegulator, arg) {
 			}
 
         } else if (current_state == PICKING_OBJ) {
-        	r_speed = -ROTATION_SPEED;
-        	l_speed = ROTATION_SPEED;
+        	r_speed = -MAX_LINEAR_SPEED;
+        	l_speed = MAX_LINEAR_SPEED;
 
         	if (right_motor_get_pos() < -NB_STEPS_PICK) {
         		right_motor_set_pos(0);
@@ -167,8 +169,8 @@ static THD_FUNCTION(PiRegulator, arg) {
 				current_state = WAIT;
         	}
         } else if (current_state == DROPPING_OBJ) {
-			r_speed = -ROTATION_SPEED;
-			l_speed = -ROTATION_SPEED;
+			r_speed = -MAX_LINEAR_SPEED;
+			l_speed = -MAX_LINEAR_SPEED;
 
 			if (right_motor_get_pos() < -NB_STEPS_DROP) {
 				right_motor_set_pos(0);
@@ -177,8 +179,8 @@ static THD_FUNCTION(PiRegulator, arg) {
 				current_state = WAIT;
 			}
         } else if (current_state == STEPPING_BACK) {
-        	r_speed = -ROTATION_SPEED;
-			l_speed = -ROTATION_SPEED;
+        	r_speed = -MAX_LINEAR_SPEED;
+			l_speed = -MAX_LINEAR_SPEED;
 
 			if (right_motor_get_pos() < -NB_STEPS_BACK) {
 				right_motor_set_pos(0);
@@ -207,7 +209,7 @@ void pi_regulator_start(void){
 
 	right_motor_set_pos(0);
 
-	chThdCreateStatic(waPiRegulator, sizeof(waPiRegulator), NORMALPRIO, PiRegulator, NULL);
+	chThdCreateStatic(waPiRegulator, sizeof(waPiRegulator), NORMALPRIO+1, PiRegulator, NULL);
 }
 
 bool is_action_done(void) {
