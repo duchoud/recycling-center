@@ -38,10 +38,10 @@ int16_t distance_pi_regulator(int16_t distance, int16_t goal){
 	sum_error_dist += error;
 
 	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
-	if(sum_error_dist > MAX_SUM_ERROR){
-		sum_error_dist = MAX_SUM_ERROR;
-	}else if(sum_error_dist < -MAX_SUM_ERROR){
-		sum_error_dist = -MAX_SUM_ERROR;
+	if(sum_error_dist > MAX_SUM_ERROR_DIST){
+		sum_error_dist = MAX_SUM_ERROR_DIST;
+	}else if(sum_error_dist < -MAX_SUM_ERROR_DIST){
+		sum_error_dist = -MAX_SUM_ERROR_DIST;
 	}
 
 	speed = KP_DIST * error + KI_DIST * sum_error_dist;
@@ -49,10 +49,10 @@ int16_t distance_pi_regulator(int16_t distance, int16_t goal){
     return speed;
 }
 
-int16_t rotate_pi_regulator(uint16_t line_position){
+int16_t rotate_p_regulator(uint16_t line_position){
 
-	int16_t error = 0;
-	int16_t speed = 0;
+	float error = 0;
+	float speed = 0;
 
 	// we want the object to be in the center
 	error = line_position - (IMAGE_BUFFER_SIZE / 2);
@@ -60,13 +60,24 @@ int16_t rotate_pi_regulator(uint16_t line_position){
 	//disables the PI regulator if the error is to small
 	//this avoids to always move as we cannot exactly be where we want and
 	//the camera is a bit noisy
-	if(abs(error) < ERROR_THRESHOLD){
+	if(abs(error) < TOF_LATERAL_THRESHOLD){
 		return 0;
 	}
 
-	speed = KP_ROTA * error ;
+	//sum_error_rota += error;
 
-    return speed;
+	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
+	/*if(sum_error_rota > MAX_SUM_ERROR_ROTA){
+		sum_error_rota = MAX_SUM_ERROR_ROTA;
+	}else if(sum_error_rota < -MAX_SUM_ERROR_ROTA){
+		sum_error_rota = -MAX_SUM_ERROR_ROTA;
+	}*/
+
+	speed = KP_ROTA * error;// + KI_ROTA * (error - prev_error);
+
+	//prev_error = error;
+
+    return (int16_t) speed;
 }
 
 bool check_object_center(void) {
@@ -87,6 +98,9 @@ static THD_FUNCTION(PiRegulator, arg) {
     int16_t r_speed = 0;
     int16_t l_speed = 0;
 
+    bool has_to_wait = false;
+    uint16_t waited_time = 0;
+
     while(1){
         time = chVTGetSystemTime();
         if (current_state == LOOKING_FOR_TARGET) {
@@ -103,30 +117,45 @@ static THD_FUNCTION(PiRegulator, arg) {
         } else if (current_state == GO_TO_TARGET) {
 			//computes the speed to give to the motors
 			//distance is modified by the time_of_flight thread
+
 			if ((get_distance() < TOF_ONLY_DIST) || check_object_center()) {
 
-				if (abs(get_distance() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
+				if (has_to_wait) {
 					r_speed = 0;
 					l_speed = 0;
-					current_state = WAIT;
-				} else {
-					r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
+					waited_time += MOTOR_UPDT_TIME;
 
-					if(abs(r_speed) < MIN_SPEED) {
-						r_speed = 0;
+					if (waited_time >= 100) {
+						has_to_wait = false;
+						waited_time = 0;
 					}
-					l_speed = r_speed;
-				}
 
+				} else {
+					if (abs(get_distance() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
+						r_speed = 0;
+						l_speed = 0;
+						current_state = WAIT;
+					} else {
+						r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
+
+						if(abs(r_speed) < MIN_SPEED) {
+							r_speed = 0;
+						}
+						l_speed = r_speed;
+					}
+				}
 			} else {
+				has_to_wait = true;
+				waited_time = 0;
 				if (get_line_position() == NOTFOUND) {
 					r_speed = 0;
 					l_speed = 0;
 				} else {
-					r_speed = -rotate_pi_regulator(get_line_position());
-					l_speed = -r_speed;
+					l_speed = rotate_p_regulator(get_line_position());
+					r_speed = -l_speed;
 				}
 			}
+
         } else if (current_state == PICKING_OBJ) {
         	r_speed = -ROTATION_SPEED;
         	l_speed = ROTATION_SPEED;
@@ -142,6 +171,16 @@ static THD_FUNCTION(PiRegulator, arg) {
 			l_speed = -ROTATION_SPEED;
 
 			if (right_motor_get_pos() < -NB_STEPS_DROP) {
+				right_motor_set_pos(0);
+				r_speed = 0;
+				l_speed = 0;
+				current_state = WAIT;
+			}
+        } else if (current_state == STEPPING_BACK) {
+        	r_speed = -ROTATION_SPEED;
+			l_speed = -ROTATION_SPEED;
+
+			if (right_motor_get_pos() < -NB_STEPS_BACK) {
 				right_motor_set_pos(0);
 				r_speed = 0;
 				l_speed = 0;

@@ -18,7 +18,7 @@ enum COLOUR_LOOKED{
 
 static bool is_looking_for_base = 0;					//search base or search object
 static uint16_t line_position = NOTFOUND;
-static enum COLOUR_LOOKED current_colour = GREEN;
+static enum COLOUR_LOOKED current_colour = BLACK;
 
 
 //semaphore
@@ -26,7 +26,7 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
 
 /*
  *  Returns the line's width extracted from the image buffer given
- *  Returns 0 if line not found
+ *  Returns NOTFOUND if line not found
  */
 void extract_object_position(uint8_t *buffer){
 
@@ -82,13 +82,7 @@ void extract_object_position(uint8_t *buffer){
 			}
 			meancolour /= (end-begin);
 
-			//use mean to clearly see the object on python
-			for(int i = begin; i < end; i++){
-				if(abs(meancolour - buffer[i]) < THRESHOLD_COLOUR){
-					buffer[i] = meancolour;
-				}
-			}
-			//chprintf((BaseSequentialStream *)&SDU1, "mean=%d  \n\r", meancolour);
+			//chprintf((BaseSequentialStream *)&SDU1, "mean=%d  ", meancolour);
 			//compare the mean colour numbers of the object we see and the object we search
 			bool wrong_colour = false;
 			if (current_colour == RED && meancolour > RED_THRESHOLD) {
@@ -99,7 +93,7 @@ void extract_object_position(uint8_t *buffer){
 				wrong_colour = true;
 			}
 
-			//if the object we see is too thin
+			//if the object we see is too thin or not the right colour
 			if(wrong_colour || (!line_not_found && (end-begin) < MIN_LINE_WIDTH)){
 				i = end;
 				begin = 0;
@@ -117,7 +111,7 @@ void extract_object_position(uint8_t *buffer){
 	}else{
 		line_position = (begin + end)/2; //gives the line position of the center of the object.
 	}
-	//chprintf((BaseSequentialStream *)&SDU1, "line position=%d \r\n", line_position);
+	//chprintf((BaseSequentialStream *)&SDU1, "\r\n");
 }
 
 void set_led_rgb(void){
@@ -125,17 +119,17 @@ void set_led_rgb(void){
 	switch (current_colour){
 		case RED:
 			set_rgb_led(LED6,MAX_COLOUR,0,0);
-			set_rgb_led(LED2,MAX_COLOUR,0,0);
+			set_rgb_led(LED4,MAX_COLOUR,0,0);
 			break;
 
 		case GREEN:
 			set_rgb_led(LED6,0,MAX_COLOUR,0);
-			set_rgb_led(LED2,0,MAX_COLOUR,0);
+			set_rgb_led(LED4,0,MAX_COLOUR,0);
 			break;
 
 		case BLACK:
 			set_rgb_led(LED6,MAX_COLOUR,MAX_COLOUR,MAX_COLOUR);
-			set_rgb_led(LED2,MAX_COLOUR,MAX_COLOUR,MAX_COLOUR);
+			set_rgb_led(LED4,MAX_COLOUR,MAX_COLOUR,MAX_COLOUR);
 			break;
 	}
 }
@@ -193,14 +187,12 @@ static THD_FUNCTION(ProcessImage, arg) {
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 				black = black + dist * dist * COEFF_MOD_CAM * dist;
 				image[i] = black;
-				set_led_rgb();
 			} else {
 				if((get_selector() % 2) == 0) {
 					current_colour = GREEN;
 					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 					red = red + dist * dist * COEFF_MOD_CAM * dist ;
 					image[i] = red;
-					set_led_rgb();
 
 				}
 				if((get_selector() % 2) == 1){
@@ -208,7 +200,6 @@ static THD_FUNCTION(ProcessImage, arg) {
 					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 					green = green + dist * dist * COEFF_MOD_CAM * dist;
 					image[i] = green;
-					set_led_rgb();
 				}
 			}
 
@@ -257,6 +248,7 @@ void process_image_start(void){
 }
 
 void set_looking_for_base(bool value) {
+	//set_led_rgb();
 	line_position = NOTFOUND;
 	is_looking_for_base = value;
 }

@@ -27,6 +27,7 @@ enum FSM {
 	DROP_OBJECT,
 	FIND_BASE,
 	GET_BASE,
+	STEP_BACK,
 	FSM_END
 };
 
@@ -67,7 +68,7 @@ int main(void)
 	motors_init();
 	//inits the sensors
 	distances_start();
-	spi_comm_start();
+	//spi_comm_start();
 
 	//stars the threads for the pi regulator and the processing of the image
 	pi_regulator_start();
@@ -135,15 +136,18 @@ int main(void)
 				case GET_BASE:
 					end_fsm++;
 					if (end_fsm == 1) {
-						current_state = FIND_OBJECT;
-						new_pi_state = LOOKING_FOR_TARGET;
-						look_dir = -1;
+						current_state = STEP_BACK;
+						new_pi_state = STEPPING_BACK;
 					} else if (end_fsm == 2) {
 						current_state = FSM_END;
 						new_pi_state = PI_END;
 					}
 					break;
-
+				case STEP_BACK:
+					current_state = FIND_OBJECT;
+					new_pi_state = LOOKING_FOR_TARGET;
+					look_dir = -1;
+					break;
 				default:
 					break;
 				}
