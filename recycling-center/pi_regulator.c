@@ -13,6 +13,7 @@
 
 static enum PI_State current_state = LOOKING_FOR_TARGET;
 static bool current_action_done = true;
+static bool looking_for_base = true;
 static int16_t look_direction = 1;
 
 //simple PI regulator implementation
@@ -70,15 +71,6 @@ int16_t rotate_p_regulator(uint16_t line_position){
 		return 0;
 	}
 
-	//sum_error_rota += error;
-
-	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
-	/*if(sum_error_rota > MAX_SUM_ERROR_ROTA){
-		sum_error_rota = MAX_SUM_ERROR_ROTA;
-	}else if(sum_error_rota < -MAX_SUM_ERROR_ROTA){
-		sum_error_rota = -MAX_SUM_ERROR_ROTA;
-	}*/
-
 	speed = KP_ROTA * error;// + KI_ROTA * (error - prev_error);
 
     return (int16_t) speed;
@@ -102,53 +94,39 @@ static THD_FUNCTION(PiRegulator, arg) {
     int16_t r_speed = 0;
     int16_t l_speed = 0;
 
-    bool has_to_wait = false;
-    uint16_t waited_time = 0;
-
     while(1){
         time = chVTGetSystemTime();
 
         if (current_state == LOOKING_FOR_TARGET) {
 
-        	r_speed = -look_direction * ROTATIONAL_SPEED;
-        	l_speed =  look_direction * ROTATIONAL_SPEED;
+        	if (looking_for_base && get_distance() < TOF_ONLY_DIST) {
+        		r_speed = -MAX_LINEAR_SPEED;
+        		l_speed = -MAX_LINEAR_SPEED;
+        	} else {
+				r_speed = -look_direction * ROTATIONAL_SPEED;
+				l_speed =  look_direction * ROTATIONAL_SPEED;
 
-        	if ((get_distance() >TOF_ONLY_DIST) && (get_line_position() != NOTFOUND)) {
-        		r_speed = 0;
-				l_speed = 0;
-				current_state = WAIT;
+				if (get_distance() > TOF_ONLY_DIST && get_line_position() != NOTFOUND) {
+					r_speed = 0;
+					l_speed = 0;
+					current_state = WAIT;
+				}
         	}
-
         } else if (current_state == GO_TO_TARGET) {
 			//computes the speed to give to the motors
 			//distance is modified by the time_of_flight thread
 
 			if ((get_distance() < TOF_ONLY_DIST) || check_object_center()) {
-
-				if (has_to_wait) {
+				if (abs(get_distance() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
 					r_speed = 0;
 					l_speed = 0;
-					waited_time += MOTOR_UPDT_TIME;
-
-					if (waited_time >= 100) {
-						has_to_wait = false;
-						waited_time = 0;
-					}
-
+					current_state = WAIT;
 				} else {
-					if (abs(get_distance() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
-						r_speed = 0;
-						l_speed = 0;
-						current_state = WAIT;
-					} else {
-						r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
+					r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
 
-						l_speed = r_speed;
-					}
+					l_speed = r_speed;
 				}
 			} else {
-				has_to_wait = true;
-				waited_time = 0;
 				if (get_line_position() == NOTFOUND) {
 					r_speed = 0;
 					l_speed = 0;
@@ -159,8 +137,8 @@ static THD_FUNCTION(PiRegulator, arg) {
 			}
 
         } else if (current_state == PICKING_OBJ) {
-        	r_speed = -MAX_LINEAR_SPEED;
-        	l_speed = MAX_LINEAR_SPEED;
+        	r_speed = -ROTATIONAL_SPEED;
+        	l_speed = ROTATIONAL_SPEED;
 
         	if (right_motor_get_pos() < -NB_STEPS_PICK) {
         		right_motor_set_pos(0);
@@ -220,6 +198,7 @@ void switch_state(enum PI_State new_state, bool is_looking_for_base, int16_t loo
 	right_motor_set_pos(0);
 	current_action_done = false;
 
+	looking_for_base = is_looking_for_base;
 	set_looking_for_base(is_looking_for_base);
 
 	look_direction = look_dir;
