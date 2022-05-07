@@ -94,6 +94,8 @@ static THD_FUNCTION(PiRegulator, arg) {
     int16_t r_speed = 0;
     int16_t l_speed = 0;
 
+    uint8_t drop_state = 0;
+
     while(1){
         time = chVTGetSystemTime();
 
@@ -103,8 +105,8 @@ static THD_FUNCTION(PiRegulator, arg) {
         	if (looking_for_base && VL53L0X_get_dist_mm() < TOF_ONLY_DIST) {
         		// if we are looking for the base it might be after a reset in which we are too close
         		// to the base to detect it, hence we move backward
-        		r_speed = -MAX_LINEAR_SPEED;
-        		l_speed = -MAX_LINEAR_SPEED;
+        		r_speed = -BACKWARD_SPEED;
+        		l_speed = -BACKWARD_SPEED;
         	} else {
         		// otherwise rotate until an object is seen
 				r_speed = -look_direction * ROTATIONAL_SPEED;
@@ -156,20 +158,42 @@ static THD_FUNCTION(PiRegulator, arg) {
 				current_state = WAIT;
         	}
         } else if (current_state == DROPPING_OBJ) {
-        	// to drop the object, we just move backward
-			r_speed = -MAX_LINEAR_SPEED;
-			l_speed = -MAX_LINEAR_SPEED;
 
-			if (right_motor_get_pos() < -NB_STEPS_DROP) {
-				right_motor_set_pos(0);
-				r_speed = 0;
-				l_speed = 0;
-				current_state = WAIT;
-			}
+        	if (drop_state == 0) {
+        		r_speed = -ROTATIONAL_SPEED;
+        		l_speed = ROTATIONAL_SPEED;
+        		if(right_motor_get_pos() < -NB_STEPS_DROP_ANGLE) {
+        			right_motor_set_pos(0);
+        			drop_state = 1;
+					r_speed = 0;
+					l_speed = 0;
+        		}
+        	} else if (drop_state == 1) {
+        		r_speed = ROTATIONAL_SPEED;
+				l_speed = -ROTATIONAL_SPEED;
+				if(right_motor_get_pos() > NB_STEPS_DROP_ANGLE) {
+					right_motor_set_pos(0);
+					drop_state = 2;
+					r_speed = 0;
+					l_speed = 0;
+				}
+        	} else {
+				// to drop the object, we just move backward
+				r_speed = -BACKWARD_SPEED;
+				l_speed = -BACKWARD_SPEED;
+
+				if (right_motor_get_pos() < -NB_STEPS_DROP) {
+					drop_state = 0;
+					right_motor_set_pos(0);
+					r_speed = 0;
+					l_speed = 0;
+					current_state = WAIT;
+				}
+        	}
         } else if (current_state == STEPPING_BACK) {
         	// to step back when too close to the base
-        	r_speed = -MAX_LINEAR_SPEED;
-			l_speed = -MAX_LINEAR_SPEED;
+        	r_speed = -BACKWARD_SPEED;
+			l_speed = -BACKWARD_SPEED;
 
 			if (right_motor_get_pos() < -NB_STEPS_BACK) {
 				right_motor_set_pos(0);

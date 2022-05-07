@@ -18,6 +18,6 @@ void process_image_start(void);
  */
 void set_searched_colour(bool is_looking_for_base);
 
-void set_led_rgb(void);
+void set_leds(void);
 
 #endif /* PROCESS_IMAGE_H */

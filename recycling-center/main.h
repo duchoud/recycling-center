@@ -37,6 +37,7 @@ extern "C" {
 
 //speed for the motors
 #define MAX_LINEAR_SPEED		450 			// [steps/s]
+#define BACKWARD_SPEED			350				// [steps/s]
 #define ROTATIONAL_SPEED		200				// [steps/s]
 
 //constants for precise displacement
@@ -45,10 +46,12 @@ extern "C" {
 #define ROBOT_DIAMETER			52  			// [mm]
 #define NB_STEPS_PER_TURN		1000			// [steps/turn]
 #define ANGLE_TO_PICK			215				// [°]
+#define ANGLE_TO_DROP			60				// [°]
 #define DEG_FULL_TURN			360				// [°]
 #define RAD_FULL_TURN			(2 * M_PI)		// [rad]
 // calculate the number of steps to do certain actions
 #define NB_STEPS_PICK			(NB_STEPS_PER_TURN * ROBOT_DIAMETER / WHEEL_DIAMETER * ANGLE_TO_PICK / DEG_FULL_TURN)
+#define NB_STEPS_DROP_ANGLE		(NB_STEPS_PER_TURN * ROBOT_DIAMETER / WHEEL_DIAMETER * ANGLE_TO_DROP / DEG_FULL_TURN)
 #define DROP_DIST				80 				// [mm]
 #define NB_STEPS_DROP			(DROP_DIST * NB_STEPS_PER_TURN / (WHEEL_DIAMETER / 2) / RAD_FULL_TURN)
 #define BACK_DIST				20 				// [mm]

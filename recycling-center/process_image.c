@@ -113,22 +113,19 @@ void extract_object_position(uint8_t *buffer){
 	}
 }
 
-void set_led_rgb(void){
+void set_leds(void){
 	clear_leds();
 	switch (current_colour){
 		case RED:
-			set_rgb_led(LED6,MAX_COLOUR,0,0);
-			set_rgb_led(LED4,MAX_COLOUR,0,0);
+			set_led(LED7, 1);
 			break;
 
 		case GREEN:
-			set_rgb_led(LED6,0,MAX_COLOUR,0);
-			set_rgb_led(LED4,0,MAX_COLOUR,0);
+			set_led(LED3, 1);
 			break;
 
 		case BLACK:
-			set_rgb_led(LED6,MAX_COLOUR,MAX_COLOUR,MAX_COLOUR);
-			set_rgb_led(LED4,MAX_COLOUR,MAX_COLOUR,MAX_COLOUR);
+			set_led(LED5, 1);
 			break;
 	}
 }
@@ -251,5 +248,5 @@ void set_searched_colour(bool is_looking_for_base) {
 		}
 	}
 
-	//set_led_rgb();
+	set_leds();
 }
