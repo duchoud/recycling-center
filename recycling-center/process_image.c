@@ -1,6 +1,5 @@
 #include "ch.h"
 #include "hal.h"
-#include <chprintf.h>
 #include <usbcfg.h>
 #include <selector.h>
 
@@ -10,6 +9,7 @@
 
 #include <process_image.h>
 
+//what colour does the camera look for
 enum COLOUR_LOOKED{
 	RED,
 	GREEN,
@@ -17,7 +17,7 @@ enum COLOUR_LOOKED{
 };
 
 static bool is_looking_for_base = 0;					//search base or search object
-static uint16_t line_position = NOTFOUND;
+static uint16_t line_position = NOTFOUND;				//if the camera doesn't find an object
 static enum COLOUR_LOOKED current_colour = BLACK;
 
 
@@ -30,8 +30,8 @@ static BSEMAPHORE_DECL(image_ready_sem, TRUE);
  */
 void extract_object_position(uint8_t *buffer){
 
-	uint16_t i = 0, begin = 0, end = 0;
-	uint8_t stop = 0, wrong_line = 0, line_not_found = 0;
+	uint16_t i = 0, begin = 0, end = 0;							//i:camera pixel number in x
+	uint8_t stop = 0, wrong_line = 0, line_not_found = 0;		//stop: stops if it finds an object
 
 	do{
 		wrong_line = 0;
@@ -63,7 +63,7 @@ void extract_object_position(uint8_t *buffer){
 		        }
 		        i++;
 		    }
-		    //if an end was not found
+		    //if no end was found
 		    if (i > IMAGE_BUFFER_SIZE || !end )
 		    {
 		        line_not_found = 1;
@@ -111,7 +111,6 @@ void extract_object_position(uint8_t *buffer){
 	}else{
 		line_position = (begin + end)/2; //gives the line position of the center of the object.
 	}
-	//chprintf((BaseSequentialStream *)&SDU1, "\r\n");
 }
 
 void set_led_rgb(void){
@@ -167,75 +166,47 @@ static THD_FUNCTION(ProcessImage, arg) {
 	uint8_t *img_buff_ptr;
 	uint8_t image[IMAGE_BUFFER_SIZE] = {0};
 
-	bool send_to_computer = true;
-
     while(1){
     	//waits until an image has been captured
         chBSemWait(&image_ready_sem);
 		//gets the pointer to the array filled with the last image in RGB565    
 		img_buff_ptr = dcmi_get_last_image_ptr();
-		//init_selector();
-		//Extracts only the red pixels
+
 		for(int i = 0; i < IMAGE_BUFFER_SIZE; i++) {
-			//uint16_t blue = (img_buff_ptr[2 * i + 1] & 0b11111);
+			//uses mask to extract the bits for red colour
 			uint16_t red = (img_buff_ptr[2 * i] & 0b11111000);
+			//uses mask to extract the bits for green colour
 			uint16_t green =  ((((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5))/2) << 3;
+			//uses both red and green chanel for black colour
 			uint16_t black = (red+green)/2;
 
 			if (is_looking_for_base) {
+				// configure the datas from the camera to see a black object
 				current_colour = BLACK;
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-				black = black + dist * dist * COEFF_MOD_CAM * dist;
+				black = black + dist * dist * COEFF_MOD_CAM * dist;  // formula to correct the error of the camera in dist^3
 				image[i] = black;
 			} else {
 				if((get_selector() % 2) == 0) {
+					// configure the datas from the camera to see a green object
 					current_colour = GREEN;
 					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-					red = red + dist * dist * COEFF_MOD_CAM * dist ;
+					red = red + dist * dist * COEFF_MOD_CAM * dist ; // formula to correct the error of the camera in dist^3
 					image[i] = red;
-
 				}
 				if((get_selector() % 2) == 1){
+					// configure the datas from the camera to see a red object
 					current_colour = RED;
 					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-					green = green + dist * dist * COEFF_MOD_CAM * dist;
+					green = green + dist * dist * COEFF_MOD_CAM * dist; // formula to correct the error of the camera in dist^3
 					image[i] = green;
 				}
 			}
-			/*if((get_selector() % 3) == 0) {
-				current_colour = GREEN;
-				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-				red = red + dist * dist * COEFF_MOD_CAM * dist ;
-				image[i] = red;
-			}
-			if((get_selector() % 3) == 1){
-				current_colour = RED;
-				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-				green = green + dist * dist * COEFF_MOD_CAM * dist;
-				image[i] = green;
-			}
-			if((get_selector() % 3) == 2){
-				current_colour = BLACK;
-				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-				black = black + dist * dist * COEFF_MOD_CAM * dist;
-				image[i] = black;
-			}*/
-
 		}
-
 		//search for an object in the image and gets its position in pixels
 		extract_object_position(image);
-
-		if(send_to_computer){
-			//sends to the computer the image
-			//SendUint8ToComputer(image, IMAGE_BUFFER_SIZE);
-		}
-		//invert the bool
-		send_to_computer = !send_to_computer;
     }
 }
-
-
 
 uint16_t get_line_position(void){
 	return line_position;
