@@ -1,9 +1,5 @@
 #include "ch.h"
 #include "hal.h"
-#include <math.h>
-#include <usbcfg.h>
-#include <chprintf.h>
-
 
 #include <main.h>
 #include <motors.h>
@@ -16,7 +12,7 @@ static bool current_action_done = true;
 static bool looking_for_base = true;
 static int16_t look_direction = 1;
 
-//simple PI regulator implementation
+//simple PI regulator implementation to get the robot at the right goal distance
 int16_t distance_pi_regulator(int16_t distance, int16_t goal){
 
 	if (distance > MAX_DISTANCE) {
@@ -47,6 +43,7 @@ int16_t distance_pi_regulator(int16_t distance, int16_t goal){
 
 	speed = KP_DIST * error + KI_DIST * sum_error_dist;
 
+	//we keep the robot at low speed so it doesn't miss its target
 	if (speed > MAX_LINEAR_SPEED) {
 		speed = MAX_LINEAR_SPEED;
 	} else if (speed < -MAX_LINEAR_SPEED) {
@@ -56,26 +53,28 @@ int16_t distance_pi_regulator(int16_t distance, int16_t goal){
     return speed;
 }
 
+// To keep the target in front of the robot so that the TOF can detect it
 int16_t rotate_p_regulator(uint16_t line_position){
 
-	float error = 0;
-	float speed = 0;
+	int16_t error = 0;
+	int16_t speed = 0;
 
 	// we want the object to be in the center
 	error = line_position - (IMAGE_BUFFER_SIZE / 2);
 
-	//disables the PI regulator if the error is to small
-	//this avoids to always move as we cannot exactly be where we want and
-	//the camera is a bit noisy
+	//disables the P regulator if the error is to small
+	//this avoids to always move
 	if(abs(error) < TOF_LATERAL_THRESHOLD){
 		return 0;
 	}
 
-	speed = KP_ROTA * error;// + KI_ROTA * (error - prev_error);
+	speed = KP_ROTA * error;
 
-    return (int16_t) speed;
+    return speed;
 }
 
+// This function returns if the target of the robot is sufficiently in the center
+// for the TOF to detect it
 bool check_object_center(void) {
 	if (abs(get_line_position() - (IMAGE_BUFFER_SIZE/2)) < TOF_LATERAL_THRESHOLD) {
 		return true;
@@ -98,11 +97,15 @@ static THD_FUNCTION(PiRegulator, arg) {
         time = chVTGetSystemTime();
 
         if (current_state == LOOKING_FOR_TARGET) {
+        	// When the robot is looking for its next target
 
         	if (looking_for_base && VL53L0X_get_dist_mm() < TOF_ONLY_DIST) {
+        		// if we are looking for the base it might be after a reset in which we are too close
+        		// to the base to detect it, hence we move backward
         		r_speed = -MAX_LINEAR_SPEED;
         		l_speed = -MAX_LINEAR_SPEED;
         	} else {
+        		// otherwise rotate until an object is seen
 				r_speed = -look_direction * ROTATIONAL_SPEED;
 				l_speed =  look_direction * ROTATIONAL_SPEED;
 
@@ -113,20 +116,24 @@ static THD_FUNCTION(PiRegulator, arg) {
 				}
         	}
         } else if (current_state == GO_TO_TARGET) {
-			//computes the speed to give to the motors
-			//distance is modified by the time_of_flight thread
+        	// uses the TOF, the camera, and the regulators to control the epuck2
+        	// so it goes to its target
 
 			if ((VL53L0X_get_dist_mm() < TOF_ONLY_DIST) || check_object_center()) {
+				// the object is in front, we move to it
 				if (abs(VL53L0X_get_dist_mm() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
 					r_speed = 0;
 					l_speed = 0;
 					current_state = WAIT;
 				} else {
-					r_speed = distance_pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
 
+					//computes the speed to give to the motors
+					//distance is modified by the time_of_flight thread
+					r_speed = distance_pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
 					l_speed = r_speed;
 				}
 			} else {
+				// the object is not in front anymore, we rotate to correct this error
 				if (get_line_position() == NOTFOUND) {
 					r_speed = 0;
 					l_speed = 0;
@@ -137,6 +144,7 @@ static THD_FUNCTION(PiRegulator, arg) {
 			}
 
         } else if (current_state == PICKING_OBJ) {
+        	// to pick the object, we rotate by the correct angle
         	r_speed = -ROTATIONAL_SPEED;
         	l_speed = ROTATIONAL_SPEED;
 
@@ -147,6 +155,7 @@ static THD_FUNCTION(PiRegulator, arg) {
 				current_state = WAIT;
         	}
         } else if (current_state == DROPPING_OBJ) {
+        	// to drop the object, we just move backward
 			r_speed = -MAX_LINEAR_SPEED;
 			l_speed = -MAX_LINEAR_SPEED;
 
@@ -157,6 +166,7 @@ static THD_FUNCTION(PiRegulator, arg) {
 				current_state = WAIT;
 			}
         } else if (current_state == STEPPING_BACK) {
+        	// to step back when too close to the base
         	r_speed = -MAX_LINEAR_SPEED;
 			l_speed = -MAX_LINEAR_SPEED;
 
@@ -169,6 +179,7 @@ static THD_FUNCTION(PiRegulator, arg) {
         } else {
         	// in wait or end mode
         	if (current_state == WAIT) {
+        		// wait mode means we give control to the main to call for the next step
         		current_action_done = true;
         	}
         	r_speed = 0;
