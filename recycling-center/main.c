@@ -27,19 +27,6 @@ enum FSM {
 	FSM_END
 };
 
-/*
-static void serial_start(void)
-{
-	static SerialConfig ser_cfg = {
-	    115200,
-	    0,
-	    0,
-	    0,
-	};
-
-	sdStart(&SD3, &ser_cfg); // UART3.
-}*/
-
 int main(void)
 {
 
@@ -47,10 +34,6 @@ int main(void)
     chSysInit();
     mpu_init();
 
-    //starts the serial communication
-    //serial_start();
-    //start the USB communication
-    //usb_start();
     //starts the camera
     dcmi_start();
 	po8030_start();
@@ -81,7 +64,6 @@ int main(void)
 
     /* Infinite loop. */
     while (1) {
-    	//waits 1 second
     	//the main is the master of the FSM so it checks if the robot has finished his current action
     	//if so it calls next
     	if (is_action_done()) {
@@ -156,6 +138,7 @@ int main(void)
 				switch_state(new_pi_state, is_looking_for_base, look_dir);
     		}
     	}
+    	//waits 1 second
         chThdSleepMilliseconds(1000);
     }
 }
