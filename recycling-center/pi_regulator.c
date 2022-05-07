@@ -9,7 +9,7 @@
 #include <motors.h>
 #include <pi_regulator.h>
 #include <process_image.h>
-#include <distances.h>
+#include <sensors/VL53L0X/VL53L0X.h>
 
 static enum PI_State current_state = LOOKING_FOR_TARGET;
 static bool current_action_done = true;
@@ -99,14 +99,14 @@ static THD_FUNCTION(PiRegulator, arg) {
 
         if (current_state == LOOKING_FOR_TARGET) {
 
-        	if (looking_for_base && get_distance() < TOF_ONLY_DIST) {
+        	if (looking_for_base && VL53L0X_get_dist_mm() < TOF_ONLY_DIST) {
         		r_speed = -MAX_LINEAR_SPEED;
         		l_speed = -MAX_LINEAR_SPEED;
         	} else {
 				r_speed = -look_direction * ROTATIONAL_SPEED;
 				l_speed =  look_direction * ROTATIONAL_SPEED;
 
-				if (get_distance() > TOF_ONLY_DIST && get_line_position() != NOTFOUND) {
+				if (VL53L0X_get_dist_mm() > TOF_ONLY_DIST && get_line_position() != NOTFOUND) {
 					r_speed = 0;
 					l_speed = 0;
 					current_state = WAIT;
@@ -116,13 +116,13 @@ static THD_FUNCTION(PiRegulator, arg) {
 			//computes the speed to give to the motors
 			//distance is modified by the time_of_flight thread
 
-			if ((get_distance() < TOF_ONLY_DIST) || check_object_center()) {
-				if (abs(get_distance() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
+			if ((VL53L0X_get_dist_mm() < TOF_ONLY_DIST) || check_object_center()) {
+				if (abs(VL53L0X_get_dist_mm() - GOAL_DISTANCE) < GOAL_THRESHOLD) {
 					r_speed = 0;
 					l_speed = 0;
 					current_state = WAIT;
 				} else {
-					r_speed = distance_pi_regulator(get_distance(), GOAL_DISTANCE);
+					r_speed = distance_pi_regulator(VL53L0X_get_dist_mm(), GOAL_DISTANCE);
 
 					l_speed = r_speed;
 				}

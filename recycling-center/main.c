@@ -16,7 +16,7 @@
 
 #include <pi_regulator.h>
 #include <process_image.h>
-#include <distances.h>
+#include <sensors/VL53L0X/VL53L0X.h>
 
 enum FSM {
 	FIND_OBJECT,
@@ -66,8 +66,8 @@ int main(void)
 	po8030_start();
 	//inits the motors
 	motors_init();
-	//inits the sensors
-	distances_start();
+	//inits the TOF
+	VL53L0X_start();
 
 	//stars the threads for the pi regulator and the processing of the image
 	pi_regulator_start();
