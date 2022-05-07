@@ -37,7 +37,7 @@ extern "C" {
 
 //speed for the motors
 #define MAX_LINEAR_SPEED		450 			// [steps/s]
-#define BACKWARD_SPEED			350				// [steps/s]
+#define BACKWARD_SPEED			300				// [steps/s]
 #define ROTATIONAL_SPEED		200				// [steps/s]
 
 //constants for precise displacement

@@ -192,29 +192,6 @@ static THD_FUNCTION(ProcessImage, arg) {
 				image[i] = green;
 				break;
 			}
-
-			/*if (is_looking_for_base) {
-				// configure the datas from the camera to see a black object
-				current_colour = BLACK;
-				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-				black = black + dist * dist * COEFF_MOD_CAM * dist;  // formula to correct the error of the camera in dist^3
-				image[i] = black;
-			} else {
-				if((get_selector() % 2) == 0) {
-					// configure the datas from the camera to see a green object
-					current_colour = GREEN;
-					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-					red = red + dist * dist * COEFF_MOD_CAM * dist ; // formula to correct the error of the camera in dist^3
-					image[i] = red;
-				}
-				if((get_selector() % 2) == 1){
-					// configure the datas from the camera to see a red object
-					current_colour = RED;
-					uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
-					green = green + dist * dist * COEFF_MOD_CAM * dist; // formula to correct the error of the camera in dist^3
-					image[i] = green;
-				}
-			}*/
 		}
 		//search for an object in the image and gets its position in pixels
 		extract_object_position(image);
@@ -238,11 +215,10 @@ void set_searched_colour(bool is_looking_for_base) {
 		// configure the datas from the camera to see a black object
 		current_colour = BLACK;
 	} else {
-		if((get_selector() % 2) == 0) {
+		if((get_selector() >= 0 && get_selector() <= 4) || (get_selector() >= 13 && get_selector() <= 15)) {
 			// configure the datas from the camera to see a green object
 			current_colour = GREEN;
-		}
-		if((get_selector() % 2) == 1){
+		} else {
 			// configure the datas from the camera to see a red object
 			current_colour = RED;
 		}

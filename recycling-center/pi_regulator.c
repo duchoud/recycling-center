@@ -103,7 +103,7 @@ static THD_FUNCTION(PiRegulator, arg) {
         	// When the robot is looking for its next target
 
         	if (looking_for_base && VL53L0X_get_dist_mm() < TOF_ONLY_DIST) {
-        		// if we are looking for the base it might be after a reset in which we are too close
+        		// if we are looking for the base it might be after a reset in which case we are too close
         		// to the base to detect it, hence we move backward
         		r_speed = -BACKWARD_SPEED;
         		l_speed = -BACKWARD_SPEED;
