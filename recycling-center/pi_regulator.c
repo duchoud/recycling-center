@@ -1,5 +1,6 @@
 #include "ch.h"
 #include "hal.h"
+#include <math.h>
 
 #include <main.h>
 #include <motors.h>
@@ -28,7 +29,7 @@ int16_t distance_pi_regulator(int16_t distance, int16_t goal){
 
 	//disables the PI regulator if the error is to small
 	//this avoids to always move as we cannot exactly be where we want
-	if(abs(error) < ERROR_THRESHOLD){
+	if(abs(error) < GOAL_THRESHOLD){
 		return 0;
 	}
 

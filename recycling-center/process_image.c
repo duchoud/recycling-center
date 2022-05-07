@@ -1,12 +1,12 @@
 #include "ch.h"
 #include "hal.h"
-#include <usbcfg.h>
-#include <selector.h>
+#include <math.h>
 
 #include "leds.h"
-#include <main.h>
 #include <camera/po8030.h>
+#include <selector.h>
 
+#include <main.h>
 #include <process_image.h>
 
 //what colour does the camera look for
