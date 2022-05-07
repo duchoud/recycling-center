@@ -13,10 +13,10 @@ uint16_t get_line_position(void);
 void process_image_start(void);
 
 /**
- * @param value: new value to set is_looking_for_base
+ * @brief update the current_colour variable, indicating which colour the robot is searching
+ * @param is_looking_for_base: to indicate wether the object search its base (in black) or an object
  */
-void set_looking_for_base(bool value);
-
+void set_searched_colour(bool is_looking_for_base);
 
 void set_led_rgb(void);
 

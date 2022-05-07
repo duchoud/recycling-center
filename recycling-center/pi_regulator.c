@@ -211,7 +211,7 @@ void switch_state(enum PI_State new_state, bool is_looking_for_base, int16_t loo
 	current_action_done = false;
 
 	looking_for_base = is_looking_for_base;
-	set_looking_for_base(is_looking_for_base);
+	set_searched_colour(is_looking_for_base);
 
 	look_direction = look_dir;
 

@@ -16,7 +16,7 @@ enum COLOUR_LOOKED{
 	BLACK
 };
 
-static bool is_looking_for_base = 0;					//search base or search object
+//static bool is_looking_for_base = 0;					//search base or search object
 static uint16_t line_position = NOTFOUND;				//if the camera doesn't find an object
 static enum COLOUR_LOOKED current_colour = BLACK;
 
@@ -179,8 +179,24 @@ static THD_FUNCTION(ProcessImage, arg) {
 			uint16_t green =  ((((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5))/2) << 3;
 			//uses both red and green chanel for black colour
 			uint16_t black = (red+green)/2;
+			uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 
-			if (is_looking_for_base) {
+			switch (current_colour) {
+			case BLACK:
+				black = black + dist * dist * COEFF_MOD_CAM * dist;  // formula to correct the error of the camera in dist^3
+				image[i] = black;
+				break;
+			case GREEN:
+				red = red + dist * dist * COEFF_MOD_CAM * dist ; // formula to correct the error of the camera in dist^3
+				image[i] = red;
+				break;
+			case RED:
+				green = green + dist * dist * COEFF_MOD_CAM * dist; // formula to correct the error of the camera in dist^3
+				image[i] = green;
+				break;
+			}
+
+			/*if (is_looking_for_base) {
 				// configure the datas from the camera to see a black object
 				current_colour = BLACK;
 				uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
@@ -201,7 +217,7 @@ static THD_FUNCTION(ProcessImage, arg) {
 					green = green + dist * dist * COEFF_MOD_CAM * dist; // formula to correct the error of the camera in dist^3
 					image[i] = green;
 				}
-			}
+			}*/
 		}
 		//search for an object in the image and gets its position in pixels
 		extract_object_position(image);
@@ -217,8 +233,23 @@ void process_image_start(void){
 	chThdCreateStatic(waCaptureImage, sizeof(waCaptureImage), NORMALPRIO, CaptureImage, NULL);
 }
 
-void set_looking_for_base(bool value) {
-	//set_led_rgb();
+void set_searched_colour(bool is_looking_for_base) {
+	// each time we calls this functions is when the state as changed, thus we update the leds value
 	line_position = NOTFOUND;
-	is_looking_for_base = value;
+
+	if (is_looking_for_base) {
+		// configure the datas from the camera to see a black object
+		current_colour = BLACK;
+	} else {
+		if((get_selector() % 2) == 0) {
+			// configure the datas from the camera to see a green object
+			current_colour = GREEN;
+		}
+		if((get_selector() % 2) == 1){
+			// configure the datas from the camera to see a red object
+			current_colour = RED;
+		}
+	}
+
+	//set_led_rgb();
 }
