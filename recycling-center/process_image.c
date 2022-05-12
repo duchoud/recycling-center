@@ -171,12 +171,12 @@ static THD_FUNCTION(ProcessImage, arg) {
 
 		for(int i = 0; i < IMAGE_BUFFER_SIZE; i++) {
 			//uses mask to extract the bits for red colour
-			uint16_t red = (img_buff_ptr[2 * i] & 0b11111000);
+			uint8_t red = (img_buff_ptr[2 * i] & 0b11111000);
 			//uses mask to extract the bits for green colour
-			uint16_t green =  ((((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5))/2) << 3;
+			uint8_t green =  ((((img_buff_ptr[2 * i] & 0b111)<<3) | ((img_buff_ptr[2 * i + 1] & 0b11100000)>>5))/2) << 3;
 			//uses both red and green chanel for black colour
-			uint16_t black = (red+green)/2;
-			uint16_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
+			uint8_t black = (red+green)/2;
+			uint8_t dist = abs(i-IMAGE_BUFFER_SIZE/2);
 
 			switch (current_colour) {
 			case BLACK:
